@@ -1,0 +1,176 @@
+{
+  "name": "Stage 7 Demo DB — RPA Style (DB + Browser)",
+  "nodes": [
+    {
+      "id": "n-start",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 30 },
+      "data": { "nodeType": "start", "label": "Start", "status": "" }
+    },
+    {
+      "id": "n-connect",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 110 },
+      "data": {
+        "nodeType": "dbConnect",
+        "label": "Connect DB",
+        "connectionName": "mainDb",
+        "databaseType": "sqlite",
+        "databasePath": "./test-output/demo.db",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-seed",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 190 },
+      "data": {
+        "nodeType": "dbExecute",
+        "label": "Seed VIN Queue",
+        "connectionName": "mainDb",
+        "sql": "CREATE TABLE IF NOT EXISTS vin_queue (id INTEGER PRIMARY KEY, vin TEXT, status TEXT DEFAULT 'PENDING');\nINSERT OR IGNORE INTO vin_queue VALUES (1,'VIN-A001','PENDING');\nINSERT OR IGNORE INTO vin_queue VALUES (2,'VIN-A002','PENDING');\nINSERT OR IGNORE INTO vin_queue VALUES (3,'VIN-B001','PENDING');",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-query",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 270 },
+      "data": {
+        "nodeType": "dbQuery",
+        "label": "Query Pending VINs",
+        "connectionName": "mainDb",
+        "sql": "SELECT * FROM vin_queue WHERE status = 'PENDING'",
+        "outputVariable": "vinList",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-nav",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 350 },
+      "data": {
+        "nodeType": "navigateUrl",
+        "label": "Open VIN Form",
+        "url": "https://httpbin.org/forms/post",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-foreach",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 430 },
+      "data": {
+        "nodeType": "forEachNode",
+        "label": "For Each VIN",
+        "collection": "{{vinList}}",
+        "itemVariable": "row",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-log-vin",
+      "type": "workflowNode",
+      "position": { "x": 560, "y": 350 },
+      "data": {
+        "nodeType": "logMessage",
+        "label": "Log VIN",
+        "message": "Processing: ID={{row.id}} VIN={{row.vin}}",
+        "level": "INFO",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-navigate",
+      "type": "workflowNode",
+      "position": { "x": 560, "y": 430 },
+      "data": {
+        "nodeType": "navigateUrl",
+        "label": "Navigate to Form",
+        "url": "https://httpbin.org/forms/post",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-input",
+      "type": "workflowNode",
+      "position": { "x": 560, "y": 510 },
+      "data": {
+        "nodeType": "inputText",
+        "label": "Input VIN",
+        "selector": "input[name='custname']",
+        "text": "{{row.vin}}",
+        "clearFirst": true,
+        "status": ""
+      }
+    },
+    {
+      "id": "n-click",
+      "type": "workflowNode",
+      "position": { "x": 560, "y": 590 },
+      "data": {
+        "nodeType": "clickElement",
+        "label": "Submit Form",
+        "selector": "form button",
+        "waitNavigation": false,
+        "status": ""
+      }
+    },
+    {
+      "id": "n-update-status",
+      "type": "workflowNode",
+      "position": { "x": 560, "y": 670 },
+      "data": {
+        "nodeType": "dbExecute",
+        "label": "Mark DONE",
+        "connectionName": "mainDb",
+        "sql": "UPDATE vin_queue SET status='DONE' WHERE id={{row.id}}",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-disconnect",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 520 },
+      "data": {
+        "nodeType": "dbDisconnect",
+        "label": "Disconnect DB",
+        "connectionName": "mainDb",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-log-done",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 600 },
+      "data": {
+        "nodeType": "logMessage",
+        "label": "Done",
+        "message": "All VINs processed and marked DONE in database.",
+        "level": "SUCCESS",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-end",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 680 },
+      "data": { "nodeType": "end", "label": "End", "autoCloseBrowser": true, "restoreWindow": true, "status": "" }
+    }
+  ],
+  "edges": [
+    { "id": "e1",  "source": "n-start",         "target": "n-connect",       "type": "smoothstep" },
+    { "id": "e2",  "source": "n-connect",        "target": "n-seed",          "type": "smoothstep" },
+    { "id": "e3",  "source": "n-seed",           "target": "n-query",         "type": "smoothstep" },
+    { "id": "e4",  "source": "n-query",          "target": "n-nav",           "type": "smoothstep" },
+    { "id": "e5",  "source": "n-nav",            "target": "n-foreach",       "type": "smoothstep" },
+    { "id": "e6",  "source": "n-foreach",        "target": "n-log-vin",       "type": "smoothstep", "sourceHandle": "body" },
+    { "id": "e7",  "source": "n-log-vin",        "target": "n-navigate",      "type": "smoothstep" },
+    { "id": "e8",  "source": "n-navigate",       "target": "n-input",         "type": "smoothstep" },
+    { "id": "e9",  "source": "n-input",          "target": "n-click",         "type": "smoothstep" },
+    { "id": "e10", "source": "n-click",          "target": "n-update-status", "type": "smoothstep" },
+    { "id": "e11", "source": "n-foreach",        "target": "n-disconnect",    "type": "smoothstep", "sourceHandle": "done" },
+    { "id": "e12", "source": "n-disconnect",     "target": "n-log-done",      "type": "smoothstep" },
+    { "id": "e13", "source": "n-log-done",       "target": "n-end",           "type": "smoothstep" }
+  ]
+}

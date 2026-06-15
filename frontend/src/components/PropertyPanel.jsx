@@ -12,6 +12,7 @@ import {
   IconCreateDir, IconDirExists,
   IconExcelOpen, IconExcelReadCell, IconExcelWriteCell,
   IconExcelReadRange, IconExcelSave, IconExcelClose,
+  IconDbConnect, IconDbQuery, IconDbExecute, IconDbDisconnect,
 } from './Icons';
 
 const api = window.electronAPI || null;
@@ -55,6 +56,10 @@ function NodeIcon({ iconKey, size = 15 }) {
     case 'excelReadRange': return <IconExcelReadRange size={size} />;
     case 'excelSave':      return <IconExcelSave size={size} />;
     case 'excelClose':     return <IconExcelClose size={size} />;
+    case 'dbConnect':      return <IconDbConnect size={size} />;
+    case 'dbQuery':        return <IconDbQuery size={size} />;
+    case 'dbExecute':      return <IconDbExecute size={size} />;
+    case 'dbDisconnect':   return <IconDbDisconnect size={size} />;
     default:               return <IconProperties size={size} />;
   }
 }

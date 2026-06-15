@@ -47,6 +47,11 @@ const excelWriteCellHandler = require('./nodes/excelWriteCell');
 const excelReadRangeHandler = require('./nodes/excelReadRange');
 const excelSaveHandler      = require('./nodes/excelSave');
 const excelCloseHandler     = require('./nodes/excelClose');
+// Stage 7 — Database
+const dbConnectHandler    = require('./nodes/dbConnect');
+const dbQueryHandler      = require('./nodes/dbQuery');
+const dbExecuteHandler    = require('./nodes/dbExecute');
+const dbDisconnectHandler = require('./nodes/dbDisconnect');
 
 class WorkflowEngine extends EventEmitter {
   constructor() {
@@ -57,6 +62,7 @@ class WorkflowEngine extends EventEmitter {
       page: null,
       variables: {},
       workbooks: {},
+      databases: {},
       keepBrowserOpen: false,
       lastError: null,
     };
@@ -122,6 +128,11 @@ class WorkflowEngine extends EventEmitter {
     this.registry.register('readRange',   excelReadRangeHandler);
     this.registry.register('saveExcel',   excelSaveHandler);
     this.registry.register('closeExcel',  excelCloseHandler);
+    // Stage 7 — Database
+    this.registry.register('dbConnect',    dbConnectHandler);
+    this.registry.register('dbQuery',      dbQueryHandler);
+    this.registry.register('dbExecute',    dbExecuteHandler);
+    this.registry.register('dbDisconnect', dbDisconnectHandler);
   }
 
   // ── Logging ─────────────────────────────────────────────────
@@ -244,6 +255,7 @@ class WorkflowEngine extends EventEmitter {
     this.context.keepBrowserOpen = false;
     this.context.variables = {};
     this.context.workbooks = {};
+    this.context.databases = {};
     this.context.lastError  = null;
 
     this.metrics = {

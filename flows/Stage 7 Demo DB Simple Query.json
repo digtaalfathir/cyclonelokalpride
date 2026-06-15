@@ -1,0 +1,86 @@
+{
+  "name": "Stage 7 Demo DB — Simple Query",
+  "nodes": [
+    {
+      "id": "n-start",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 30 },
+      "data": { "nodeType": "start", "label": "Start", "status": "" }
+    },
+    {
+      "id": "n-connect",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 110 },
+      "data": {
+        "nodeType": "dbConnect",
+        "label": "Connect DB",
+        "connectionName": "mainDb",
+        "databaseType": "sqlite",
+        "databasePath": "./test-output/demo.db",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-seed",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 190 },
+      "data": {
+        "nodeType": "dbExecute",
+        "label": "Seed Users Table",
+        "connectionName": "mainDb",
+        "sql": "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT, city TEXT, score INTEGER);\nINSERT OR IGNORE INTO users VALUES (1,'Alice','Jakarta',92);\nINSERT OR IGNORE INTO users VALUES (2,'Bob','Bandung',85);\nINSERT OR IGNORE INTO users VALUES (3,'Charlie','Surabaya',78);\nINSERT OR IGNORE INTO users VALUES (4,'Diana','Yogyakarta',95);",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-query",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 270 },
+      "data": {
+        "nodeType": "dbQuery",
+        "label": "SELECT * FROM users",
+        "connectionName": "mainDb",
+        "sql": "SELECT * FROM users",
+        "outputVariable": "users",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-log",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 350 },
+      "data": {
+        "nodeType": "logMessage",
+        "label": "Log Results",
+        "message": "Users from DB: {{users}}",
+        "level": "SUCCESS",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-disconnect",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 430 },
+      "data": {
+        "nodeType": "dbDisconnect",
+        "label": "Disconnect DB",
+        "connectionName": "mainDb",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-end",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 510 },
+      "data": { "nodeType": "end", "label": "End", "autoCloseBrowser": false, "restoreWindow": true, "status": "" }
+    }
+  ],
+  "edges": [
+    { "id": "e1", "source": "n-start",      "target": "n-connect",    "type": "smoothstep" },
+    { "id": "e2", "source": "n-connect",    "target": "n-seed",       "type": "smoothstep" },
+    { "id": "e3", "source": "n-seed",       "target": "n-query",      "type": "smoothstep" },
+    { "id": "e4", "source": "n-query",      "target": "n-log",        "type": "smoothstep" },
+    { "id": "e5", "source": "n-log",        "target": "n-disconnect", "type": "smoothstep" },
+    { "id": "e6", "source": "n-disconnect", "target": "n-end",        "type": "smoothstep" }
+  ]
+}

@@ -1,0 +1,99 @@
+{
+  "name": "Stage 7 Demo DB — Execute Update",
+  "nodes": [
+    {
+      "id": "n-start",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 30 },
+      "data": { "nodeType": "start", "label": "Start", "status": "" }
+    },
+    {
+      "id": "n-connect",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 110 },
+      "data": {
+        "nodeType": "dbConnect",
+        "label": "Connect DB",
+        "connectionName": "mainDb",
+        "databaseType": "sqlite",
+        "databasePath": "./test-output/demo.db",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-seed",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 190 },
+      "data": {
+        "nodeType": "dbExecute",
+        "label": "Seed VIN Queue",
+        "connectionName": "mainDb",
+        "sql": "CREATE TABLE IF NOT EXISTS vin_queue (id INTEGER PRIMARY KEY, vin TEXT, status TEXT DEFAULT 'PENDING');\nINSERT OR IGNORE INTO vin_queue VALUES (1,'VIN-A001','PENDING');\nINSERT OR IGNORE INTO vin_queue VALUES (2,'VIN-A002','PENDING');\nINSERT OR IGNORE INTO vin_queue VALUES (3,'VIN-B001','PENDING');",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-update",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 270 },
+      "data": {
+        "nodeType": "dbExecute",
+        "label": "Mark ID=1 as DONE",
+        "connectionName": "mainDb",
+        "sql": "UPDATE vin_queue SET status='DONE' WHERE id=1",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-query",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 350 },
+      "data": {
+        "nodeType": "dbQuery",
+        "label": "Verify Changes",
+        "connectionName": "mainDb",
+        "sql": "SELECT * FROM vin_queue",
+        "outputVariable": "allRows",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-log",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 430 },
+      "data": {
+        "nodeType": "logMessage",
+        "label": "Log All Rows",
+        "message": "VIN Queue after update: {{allRows}}",
+        "level": "SUCCESS",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-disconnect",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 510 },
+      "data": {
+        "nodeType": "dbDisconnect",
+        "label": "Disconnect DB",
+        "connectionName": "mainDb",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-end",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 590 },
+      "data": { "nodeType": "end", "label": "End", "autoCloseBrowser": false, "restoreWindow": true, "status": "" }
+    }
+  ],
+  "edges": [
+    { "id": "e1", "source": "n-start",      "target": "n-connect",    "type": "smoothstep" },
+    { "id": "e2", "source": "n-connect",    "target": "n-seed",       "type": "smoothstep" },
+    { "id": "e3", "source": "n-seed",       "target": "n-update",     "type": "smoothstep" },
+    { "id": "e4", "source": "n-update",     "target": "n-query",      "type": "smoothstep" },
+    { "id": "e5", "source": "n-query",      "target": "n-log",        "type": "smoothstep" },
+    { "id": "e6", "source": "n-log",        "target": "n-disconnect", "type": "smoothstep" },
+    { "id": "e7", "source": "n-disconnect", "target": "n-end",        "type": "smoothstep" }
+  ]
+}

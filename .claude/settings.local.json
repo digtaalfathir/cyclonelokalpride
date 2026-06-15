@@ -7,7 +7,8 @@
       "Bash(npm install *)",
       "Bash(node -e \"const e = require\\('exceljs'\\); console.log\\('exceljs version:', require\\('./node_modules/exceljs/package.json'\\).version\\)\")",
       "Bash(node -e ' *)",
-      "Bash(curl -s https://httpbin.org/forms/post)"
+      "Bash(curl -s https://httpbin.org/forms/post)",
+      "Bash(node -e \"require\\('sql.js'\\)\\(\\).then\\(SQL => { const db = new SQL.Database\\(\\); db.exec\\('CREATE TABLE t \\(x\\); INSERT INTO t VALUES\\(42\\)'\\); const r = db.exec\\('SELECT * FROM t'\\); console.log\\('sql.js OK:', JSON.stringify\\(r\\)\\); db.close\\(\\); }\\)\")"
     ]
   }
 }

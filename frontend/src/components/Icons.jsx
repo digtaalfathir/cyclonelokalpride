@@ -623,3 +623,48 @@ export function IconLog({ size = 16 }) {
     </svg>
   );
 }
+
+// ── Stage 7 — Database ────────────────────────────────────────
+
+export function IconDbConnect({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <ellipse cx="8" cy="4.5" rx="5" ry="1.8"/>
+      <path d="M3 4.5v4c0 1 2.24 1.8 5 1.8s5-.8 5-1.8v-4"/>
+      <line x1="12.5" y1="11" x2="14.5" y2="11"/>
+      <line x1="13.5" y1="10" x2="13.5" y2="12"/>
+    </svg>
+  );
+}
+
+export function IconDbQuery({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <ellipse cx="7.5" cy="4.5" rx="4.5" ry="1.8"/>
+      <path d="M3 4.5v4c0 1 2 1.8 4.5 1.8"/>
+      <circle cx="11.5" cy="11.5" r="2.5"/>
+      <line x1="13.5" y1="13.5" x2="15" y2="15"/>
+    </svg>
+  );
+}
+
+export function IconDbExecute({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <ellipse cx="7.5" cy="4.5" rx="4.5" ry="1.8"/>
+      <path d="M3 4.5v4c0 1 2 1.8 4.5 1.8"/>
+      <polygon points="11,9.5 15,12 11,14.5" fill="currentColor" stroke="none"/>
+    </svg>
+  );
+}
+
+export function IconDbDisconnect({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <ellipse cx="7.5" cy="4.5" rx="4.5" ry="1.8"/>
+      <path d="M3 4.5v4c0 1 2 1.8 4.5 1.8"/>
+      <line x1="11" y1="10" x2="14.5" y2="13.5"/>
+      <line x1="14.5" y1="10" x2="11" y2="13.5"/>
+    </svg>
+  );
+}
