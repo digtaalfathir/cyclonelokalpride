@@ -7,6 +7,9 @@ import {
   IconCondition, IconLoop, IconShield,
   IconWaitUrl, IconWaitEl, IconWaitLoad,
   IconGetUrl, IconGetText, IconExists,
+  IconJsonParse, IconStrReplace, IconStrContains, IconDateTime, IconArrLength,
+  IconReadFile, IconWriteFile, IconMoveFile, IconDeleteFile, IconFileExists,
+  IconCreateDir, IconDirExists,
 } from './Icons';
 
 const api = window.electronAPI || null;
@@ -31,8 +34,20 @@ function NodeIcon({ iconKey, size = 15 }) {
     case 'waitLoad':  return <IconWaitLoad size={size} />;
     case 'getUrl':    return <IconGetUrl size={size} />;
     case 'getText':   return <IconGetText size={size} />;
-    case 'exists':    return <IconExists size={size} />;
-    default:          return <IconProperties size={size} />;
+    case 'exists':      return <IconExists size={size} />;
+    case 'jsonParse':   return <IconJsonParse size={size} />;
+    case 'strReplace':  return <IconStrReplace size={size} />;
+    case 'strContains': return <IconStrContains size={size} />;
+    case 'dateTime':    return <IconDateTime size={size} />;
+    case 'arrLength':   return <IconArrLength size={size} />;
+    case 'readFile':    return <IconReadFile size={size} />;
+    case 'writeFile':   return <IconWriteFile size={size} />;
+    case 'moveFile':    return <IconMoveFile size={size} />;
+    case 'deleteFile':  return <IconDeleteFile size={size} />;
+    case 'fileExists':  return <IconFileExists size={size} />;
+    case 'createDir':   return <IconCreateDir size={size} />;
+    case 'dirExists':   return <IconDirExists size={size} />;
+    default:            return <IconProperties size={size} />;
   }
 }
 

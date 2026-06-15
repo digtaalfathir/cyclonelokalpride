@@ -1,0 +1,165 @@
+{
+  "name": "Stage 5 Demo Data Processing",
+  "nodes": [
+    {
+      "id": "n-start",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 30 },
+      "data": { "nodeType": "start", "label": "Start", "status": "" }
+    },
+    {
+      "id": "n-http",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 110 },
+      "data": {
+        "nodeType": "httpRequest",
+        "label": "Fetch Users",
+        "method": "GET",
+        "url": "https://jsonplaceholder.typicode.com/users",
+        "headers": "",
+        "body": "",
+        "outputVariable": "response",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-setjson",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 190 },
+      "data": {
+        "nodeType": "setVariable",
+        "label": "Extract User List",
+        "variableName": "users",
+        "value": "{{response.data}}",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-arrlen",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 270 },
+      "data": {
+        "nodeType": "arrayLength",
+        "label": "Count Users",
+        "inputArray": "{{users}}",
+        "outputVariable": "userCount",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-if",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 360 },
+      "data": {
+        "nodeType": "ifNode",
+        "label": "Has Users?",
+        "condition": "{{userCount > 0}}",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-getname",
+      "type": "workflowNode",
+      "position": { "x": 130, "y": 460 },
+      "data": {
+        "nodeType": "setVariable",
+        "label": "Get First Name",
+        "variableName": "firstName",
+        "value": "{{response.data.0.name}}",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-strreplace",
+      "type": "workflowNode",
+      "position": { "x": 130, "y": 540 },
+      "data": {
+        "nodeType": "stringReplace",
+        "label": "Clean Name",
+        "input": "{{firstName}}",
+        "search": " ",
+        "replace": "_",
+        "outputVariable": "cleanName",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-strcontains",
+      "type": "workflowNode",
+      "position": { "x": 130, "y": 620 },
+      "data": {
+        "nodeType": "stringContains",
+        "label": "Check Name Has L",
+        "input": "{{firstName}}",
+        "search": "L",
+        "caseSensitive": false,
+        "outputVariable": "nameHasL",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-datetime",
+      "type": "workflowNode",
+      "position": { "x": 130, "y": 700 },
+      "data": {
+        "nodeType": "dateTimeFormat",
+        "label": "Format Today",
+        "inputDate": "2026-06-16",
+        "inputFormat": "",
+        "outputFormat": "DD/MM/YYYY",
+        "outputVariable": "today",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-log-ok",
+      "type": "workflowNode",
+      "position": { "x": 130, "y": 790 },
+      "data": {
+        "nodeType": "logMessage",
+        "label": "Log Result",
+        "message": "[{{today}}] Found {{userCount}} users | First: {{firstName}} (slug: {{cleanName}}) | Contains L: {{nameHasL}}",
+        "level": "SUCCESS",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-log-empty",
+      "type": "workflowNode",
+      "position": { "x": 500, "y": 460 },
+      "data": {
+        "nodeType": "logMessage",
+        "label": "Log Empty",
+        "message": "No users found in response.",
+        "level": "WARN",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-end",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 900 },
+      "data": {
+        "nodeType": "end",
+        "label": "End",
+        "autoCloseBrowser": false,
+        "restoreWindow": true,
+        "status": ""
+      }
+    }
+  ],
+  "edges": [
+    { "id": "e1", "source": "n-start",      "target": "n-http",       "type": "smoothstep" },
+    { "id": "e2", "source": "n-http",        "target": "n-setjson",    "type": "smoothstep" },
+    { "id": "e3", "source": "n-setjson",     "target": "n-arrlen",     "type": "smoothstep" },
+    { "id": "e4", "source": "n-arrlen",      "target": "n-if",         "type": "smoothstep" },
+    { "id": "e5", "source": "n-if",          "target": "n-getname",    "type": "smoothstep", "sourceHandle": "true" },
+    { "id": "e6", "source": "n-getname",     "target": "n-strreplace", "type": "smoothstep" },
+    { "id": "e7", "source": "n-strreplace",  "target": "n-strcontains","type": "smoothstep" },
+    { "id": "e8", "source": "n-strcontains", "target": "n-datetime",   "type": "smoothstep" },
+    { "id": "e9", "source": "n-datetime",    "target": "n-log-ok",     "type": "smoothstep" },
+    { "id": "e10","source": "n-log-ok",      "target": "n-end",        "type": "smoothstep" },
+    { "id": "e11","source": "n-if",          "target": "n-log-empty",  "type": "smoothstep", "sourceHandle": "false" },
+    { "id": "e12","source": "n-log-empty",   "target": "n-end",        "type": "smoothstep" }
+  ]
+}

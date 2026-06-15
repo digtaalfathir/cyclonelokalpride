@@ -274,6 +274,140 @@ export function IconChevronUp({ size = 14 }) {
   );
 }
 
+// ── Stage 5 — File System icons ───────────────────────────────
+
+// Document + right-arrow exiting — Read File
+export function IconReadFile({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8.5 2H3.5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h6" />
+      <path d="M8.5 2v3H11.5" />
+      <path d="M10 10h5M12.5 7.5l2.5 2.5-2.5 2.5" />
+    </svg>
+  );
+}
+
+// Document + pencil — Write File
+export function IconWriteFile({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8.5 2H3.5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1V7.5" />
+      <path d="M8.5 2v3H11.5" />
+      <path d="M11.5 3.5l2 2-4 4H7.5V7.5l4-4Z" />
+    </svg>
+  );
+}
+
+// Two doc outlines + transfer arrow — Move File
+export function IconMoveFile({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1.5 3.5h4v9h-4zM10.5 3.5h4v9h-4z" />
+      <path d="M6.5 8h3M8 6l1.5 2L8 10" />
+    </svg>
+  );
+}
+
+// Document + X — Delete File
+export function IconDeleteFile({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 2H3.5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1V7" />
+      <path d="M8 2v3H11" />
+      <path d="M10 5l3.5 3.5M13.5 5L10 8.5" />
+    </svg>
+  );
+}
+
+// Document + checkmark — File Exists
+export function IconFileExists({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 2H3.5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h9a1 1 0 0 0 1-1V7" />
+      <path d="M8 2v3H11" />
+      <path d="M10 10l1.5 1.5 2.5-3" />
+    </svg>
+  );
+}
+
+// Folder + plus — Create Directory
+export function IconCreateDir({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1.5 5V4a1 1 0 0 1 1-1H6l1.5 1.5H13a1 1 0 0 1 1 1V7" />
+      <path d="M1.5 6.5H9.5v6H2.5a1 1 0 0 1-1-1V6.5Z" />
+      <path d="M12 8v5M9.5 10.5h5" />
+    </svg>
+  );
+}
+
+// Folder + checkmark — Directory Exists
+export function IconDirExists({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1.5 5V4a1 1 0 0 1 1-1H6l1.5 1.5H10a1 1 0 0 1 1 1v1" />
+      <path d="M1.5 6.5h9.5v6H2.5a1 1 0 0 1-1-1V6.5Z" />
+      <path d="M10 11l1.5 1.5L14 9" />
+    </svg>
+  );
+}
+
+// ── Stage 4B — Data Processing icons ─────────────────────────
+
+// { } braces with inner arrow — JSON Parse
+export function IconJsonParse({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4.5 2.5C3.2 2.5 2.5 3.2 2.5 4.5V6C2.5 6.8 2 7.3 1.5 7.8l.5.2C2.5 8.5 2.5 9 2.5 10V11.5c0 1.3.7 2 2 2" />
+      <path d="M11.5 2.5c1.3 0 2 .7 2 2V6c0 .8.5 1.3 1 1.8l-.5.2c-.5.5-.5 1-.5 2V11.5c0 1.3-.7 2-2 2" />
+      <path d="M6.5 8H9M7.5 6.5L9 8l-1.5 1.5" />
+    </svg>
+  );
+}
+
+// Two text stubs + right arrow — String Replace
+export function IconStrReplace({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1.5 5.5h5M1.5 10.5h5" />
+      <path d="M8.5 8h5.5M11 5.5l3 2.5-3 2.5" />
+    </svg>
+  );
+}
+
+// Magnifier with tick inside — String Contains
+export function IconStrContains({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="6.5" cy="6.5" r="4.5" />
+      <path d="M10.2 10.2L14 14" />
+      <path d="M4.5 6.5l1.5 1.5 2-2" />
+    </svg>
+  );
+}
+
+// Calendar grid with format arrow — Date Time Format
+export function IconDateTime({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1.5" y="3" width="10" height="9" rx="1.5" />
+      <path d="M1.5 6.5h10M4.5 1.5v3M8.5 1.5v3" />
+      <path d="M3.5 9.5h2M7 9.5h1.5" />
+      <path d="M13 6l2.5 2L13 10" />
+    </svg>
+  );
+}
+
+// Square brackets with # hash — Array Length
+export function IconArrLength({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 2.5H2.5v11H4M12 2.5h1.5v11H12" />
+      <path d="M6 6v4M9 6v4M5 8h5" />
+    </svg>
+  );
+}
+
 // ── Stage 4A icons ────────────────────────────────────────────
 
 // Clock + URL address bar — Wait URL

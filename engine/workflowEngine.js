@@ -26,6 +26,20 @@ const waitPageLoadHandler  = require('./nodes/waitPageLoad');
 const getCurrentUrlHandler = require('./nodes/getCurrentUrl');
 const getTextHandler       = require('./nodes/getText');
 const elementExistsHandler = require('./nodes/elementExists');
+// Stage 4B — Data Processing
+const jsonParseHandler      = require('./nodes/jsonParse');
+const stringReplaceHandler  = require('./nodes/stringReplace');
+const stringContainsHandler = require('./nodes/stringContains');
+const dateTimeFormatHandler = require('./nodes/dateTimeFormat');
+const arrayLengthHandler    = require('./nodes/arrayLength');
+// Stage 5 — File System
+const readFileHandler        = require('./nodes/readFile');
+const writeFileHandler       = require('./nodes/writeFile');
+const moveFileHandler        = require('./nodes/moveFile');
+const deleteFileHandler      = require('./nodes/deleteFile');
+const fileExistsHandler      = require('./nodes/fileExists');
+const createDirectoryHandler = require('./nodes/createDirectory');
+const directoryExistsHandler = require('./nodes/directoryExists');
 
 class WorkflowEngine extends EventEmitter {
   constructor() {
@@ -79,6 +93,20 @@ class WorkflowEngine extends EventEmitter {
     this.registry.register('getCurrentUrl', getCurrentUrlHandler);
     this.registry.register('getText',       getTextHandler);
     this.registry.register('elementExists', elementExistsHandler);
+    // Stage 4B — Data Processing
+    this.registry.register('jsonParse',      jsonParseHandler);
+    this.registry.register('stringReplace',  stringReplaceHandler);
+    this.registry.register('stringContains', stringContainsHandler);
+    this.registry.register('dateTimeFormat', dateTimeFormatHandler);
+    this.registry.register('arrayLength',    arrayLengthHandler);
+    // Stage 5 — File System
+    this.registry.register('readFile',        readFileHandler);
+    this.registry.register('writeFile',       writeFileHandler);
+    this.registry.register('moveFile',        moveFileHandler);
+    this.registry.register('deleteFile',      deleteFileHandler);
+    this.registry.register('fileExists',      fileExistsHandler);
+    this.registry.register('createDirectory', createDirectoryHandler);
+    this.registry.register('directoryExists', directoryExistsHandler);
   }
 
   // ── Logging ─────────────────────────────────────────────────
@@ -151,8 +179,25 @@ class WorkflowEngine extends EventEmitter {
     let result;
 
     try {
+      // Snapshot variable keys+serialised values for Variable Viewer diffing
+      const varSnap = {};
+      for (const [k, v] of Object.entries(this.context.variables)) {
+        varSnap[k] = typeof v === 'object' && v !== null ? JSON.stringify(v) : v;
+      }
+
       // nodeId passed as 4th arg so ForEach/TryCatch can call executeFromHandle
       result = await handler.execute(node.data, this.context, this, node.id);
+
+      // Variable Viewer: log each variable that was set or changed by this node
+      for (const [k, v] of Object.entries(this.context.variables)) {
+        const before = varSnap[k];
+        const after  = typeof v === 'object' && v !== null ? JSON.stringify(v) : v;
+        if (before !== after) {
+          const display = String(after).length > 120 ? String(after).slice(0, 120) + '...' : String(after);
+          this.log('INFO', `  >> ${k}: ${display}`);
+        }
+      }
+
       const dur = Date.now() - t0;
       this.metrics.nodesExecuted++;
       this.metrics.nodeTimes[node.id] = { label, durationMs: dur, status: 'success' };

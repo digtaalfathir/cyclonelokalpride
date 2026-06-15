@@ -1,0 +1,158 @@
+{
+  "name": "Stage 5 Demo File System",
+  "nodes": [
+    {
+      "id": "n-start",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 30 },
+      "data": { "nodeType": "start", "label": "Start", "status": "" }
+    },
+    {
+      "id": "n-mkdir",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 110 },
+      "data": {
+        "nodeType": "createDirectory",
+        "label": "Create Output Dir",
+        "directoryPath": "./test-output",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-write",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 190 },
+      "data": {
+        "nodeType": "writeFile",
+        "label": "Write JSON File",
+        "filePath": "./test-output/users.json",
+        "content": "[{\"id\":1,\"name\":\"Alice\",\"city\":\"Jakarta\"},{\"id\":2,\"name\":\"Bob\",\"city\":\"Bandung\"},{\"id\":3,\"name\":\"Charlie\",\"city\":\"Surabaya\"}]",
+        "appendMode": false,
+        "encoding": "utf8",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-exists",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 270 },
+      "data": {
+        "nodeType": "fileExists",
+        "label": "File Exists?",
+        "filePath": "./test-output/users.json",
+        "outputVariable": "fileExists",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-read",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 350 },
+      "data": {
+        "nodeType": "readFile",
+        "label": "Read JSON File",
+        "filePath": "./test-output/users.json",
+        "encoding": "utf8",
+        "outputVariable": "rawJson",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-parse",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 430 },
+      "data": {
+        "nodeType": "jsonParse",
+        "label": "Parse JSON",
+        "input": "{{rawJson}}",
+        "outputVariable": "users",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-count",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 510 },
+      "data": {
+        "nodeType": "arrayLength",
+        "label": "Count Users",
+        "inputArray": "{{users}}",
+        "outputVariable": "userCount",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-log-header",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 590 },
+      "data": {
+        "nodeType": "logMessage",
+        "label": "Log Summary",
+        "message": "File read OK (exists: {{fileExists}}) | Found {{userCount}} users",
+        "level": "SUCCESS",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-foreach",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 670 },
+      "data": {
+        "nodeType": "forEachNode",
+        "label": "For Each User",
+        "collection": "{{users}}",
+        "itemVariable": "user",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-log-item",
+      "type": "workflowNode",
+      "position": { "x": 480, "y": 670 },
+      "data": {
+        "nodeType": "logMessage",
+        "label": "Log User",
+        "message": "  User #{{user.id}}: {{user.name}} — {{user.city}}",
+        "level": "INFO",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-delete",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 760 },
+      "data": {
+        "nodeType": "deleteFile",
+        "label": "Cleanup File",
+        "filePath": "./test-output/users.json",
+        "ignoreNotFound": true,
+        "status": ""
+      }
+    },
+    {
+      "id": "n-end",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 840 },
+      "data": {
+        "nodeType": "end",
+        "label": "End",
+        "autoCloseBrowser": false,
+        "restoreWindow": true,
+        "status": ""
+      }
+    }
+  ],
+  "edges": [
+    { "id": "e1",  "source": "n-start",      "target": "n-mkdir",      "type": "smoothstep" },
+    { "id": "e2",  "source": "n-mkdir",       "target": "n-write",      "type": "smoothstep" },
+    { "id": "e3",  "source": "n-write",       "target": "n-exists",     "type": "smoothstep" },
+    { "id": "e4",  "source": "n-exists",      "target": "n-read",       "type": "smoothstep" },
+    { "id": "e5",  "source": "n-read",        "target": "n-parse",      "type": "smoothstep" },
+    { "id": "e6",  "source": "n-parse",       "target": "n-count",      "type": "smoothstep" },
+    { "id": "e7",  "source": "n-count",       "target": "n-log-header", "type": "smoothstep" },
+    { "id": "e8",  "source": "n-log-header",  "target": "n-foreach",    "type": "smoothstep" },
+    { "id": "e9",  "source": "n-foreach",     "target": "n-log-item",   "type": "smoothstep", "sourceHandle": "body" },
+    { "id": "e10", "source": "n-foreach",     "target": "n-delete",     "type": "smoothstep", "sourceHandle": "done" },
+    { "id": "e11", "source": "n-delete",      "target": "n-end",        "type": "smoothstep" }
+  ]
+}
