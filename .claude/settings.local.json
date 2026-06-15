@@ -3,7 +3,11 @@
     "allow": [
       "Bash(npx vite *)",
       "Bash(node -e \"const rf = require\\('./node_modules/reactflow/dist/umd/reactflow.js'\\); console.log\\('BackgroundVariant' in rf ? 'OK' : 'MISSING'\\);\")",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(npm install *)",
+      "Bash(node -e \"const e = require\\('exceljs'\\); console.log\\('exceljs version:', require\\('./node_modules/exceljs/package.json'\\).version\\)\")",
+      "Bash(node -e ' *)",
+      "Bash(curl -s https://httpbin.org/forms/post)"
     ]
   }
 }

@@ -274,6 +274,78 @@ export function IconChevronUp({ size = 14 }) {
   );
 }
 
+// ── Stage 6 — Excel icons ─────────────────────────────────────
+
+// Spreadsheet grid with open-folder tab — Open Excel
+export function IconExcelOpen({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1.5" y="3" width="13" height="11" rx="1.5" />
+      <path d="M1.5 6.5h13" />
+      <path d="M5.5 3V1.5M10.5 3V1.5" />
+      <path d="M5 9.5h2M9 9.5h2M5 12h2M9 12h2" />
+    </svg>
+  );
+}
+
+// Cell with highlight ring + right arrow — Read Cell
+export function IconExcelReadCell({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1.5" y="3" width="9" height="10" rx="1.5" />
+      <path d="M1.5 7h9M5.5 3v10" />
+      <path d="M12 8h3M13.5 6l2 2-2 2" />
+    </svg>
+  );
+}
+
+// Cell with pencil mark — Write Cell
+export function IconExcelWriteCell({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1.5" y="3" width="9" height="10" rx="1.5" />
+      <path d="M1.5 7h9M5.5 3v10" />
+      <path d="M12.5 5l2 2-3 3H9.5v-2l3-3Z" />
+    </svg>
+  );
+}
+
+// Multiple rows selected (bracket + lines) — Read Range
+export function IconExcelReadRange({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1.5" y="3" width="11" height="10" rx="1.5" />
+      <path d="M1.5 6.5h11M1.5 10h11" />
+      <path d="M5.5 3v10M9 3v10" />
+      <path d="M14 5.5v5" strokeDasharray="1.5 1" />
+      <path d="M13 5.5h1.5M13 10.5h1.5" />
+    </svg>
+  );
+}
+
+// Disk / save with small grid — Save Excel
+export function IconExcelSave({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M13.5 13.5H2.5a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1H11l2.5 2.5v8.5a1 1 0 0 1-1 1Z" />
+      <rect x="4.5" y="2.5" width="4.5" height="3" rx=".5" />
+      <rect x="4" y="8.5" width="8" height="4" rx=".5" />
+      <path d="M6 10h4" />
+    </svg>
+  );
+}
+
+// Spreadsheet grid with X badge — Close Excel
+export function IconExcelClose({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1.5" y="3" width="9" height="10" rx="1.5" />
+      <path d="M1.5 7h9M5.5 3v10" />
+      <path d="M11.5 5l3.5 3.5M15 5l-3.5 3.5" />
+    </svg>
+  );
+}
+
 // ── Stage 5 — File System icons ───────────────────────────────
 
 // Document + right-arrow exiting — Read File

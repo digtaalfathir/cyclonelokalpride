@@ -40,6 +40,13 @@ const deleteFileHandler      = require('./nodes/deleteFile');
 const fileExistsHandler      = require('./nodes/fileExists');
 const createDirectoryHandler = require('./nodes/createDirectory');
 const directoryExistsHandler = require('./nodes/directoryExists');
+// Stage 6 — Excel
+const excelOpenHandler      = require('./nodes/excelOpen');
+const excelReadCellHandler  = require('./nodes/excelReadCell');
+const excelWriteCellHandler = require('./nodes/excelWriteCell');
+const excelReadRangeHandler = require('./nodes/excelReadRange');
+const excelSaveHandler      = require('./nodes/excelSave');
+const excelCloseHandler     = require('./nodes/excelClose');
 
 class WorkflowEngine extends EventEmitter {
   constructor() {
@@ -49,6 +56,7 @@ class WorkflowEngine extends EventEmitter {
       browser: null,
       page: null,
       variables: {},
+      workbooks: {},
       keepBrowserOpen: false,
       lastError: null,
     };
@@ -107,6 +115,13 @@ class WorkflowEngine extends EventEmitter {
     this.registry.register('fileExists',      fileExistsHandler);
     this.registry.register('createDirectory', createDirectoryHandler);
     this.registry.register('directoryExists', directoryExistsHandler);
+    // Stage 6 — Excel
+    this.registry.register('openExcel',   excelOpenHandler);
+    this.registry.register('readCell',    excelReadCellHandler);
+    this.registry.register('writeCell',   excelWriteCellHandler);
+    this.registry.register('readRange',   excelReadRangeHandler);
+    this.registry.register('saveExcel',   excelSaveHandler);
+    this.registry.register('closeExcel',  excelCloseHandler);
   }
 
   // ── Logging ─────────────────────────────────────────────────
@@ -228,6 +243,7 @@ class WorkflowEngine extends EventEmitter {
     // Reset per-run state
     this.context.keepBrowserOpen = false;
     this.context.variables = {};
+    this.context.workbooks = {};
     this.context.lastError  = null;
 
     this.metrics = {

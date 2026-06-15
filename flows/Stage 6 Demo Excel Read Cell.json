@@ -1,0 +1,104 @@
+{
+  "name": "Stage 6 Demo Excel — Read Cell",
+  "nodes": [
+    {
+      "id": "n-start",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 30 },
+      "data": { "nodeType": "start", "label": "Start", "status": "" }
+    },
+    {
+      "id": "n-open",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 110 },
+      "data": {
+        "nodeType": "openExcel",
+        "label": "Open Sample Excel",
+        "filePath": "./test-output/sample.xlsx",
+        "outputVariable": "wb",
+        "createIfNotExists": false,
+        "status": ""
+      }
+    },
+    {
+      "id": "n-read-a1",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 190 },
+      "data": {
+        "nodeType": "readCell",
+        "label": "Read A1 (Header)",
+        "workbookId": "{{wb}}",
+        "sheetName": "Data",
+        "cell": "A1",
+        "outputVariable": "headerA",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-read-a2",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 270 },
+      "data": {
+        "nodeType": "readCell",
+        "label": "Read A2 (First Name)",
+        "workbookId": "{{wb}}",
+        "sheetName": "Data",
+        "cell": "A2",
+        "outputVariable": "firstName",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-read-c2",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 350 },
+      "data": {
+        "nodeType": "readCell",
+        "label": "Read C2 (Score)",
+        "workbookId": "{{wb}}",
+        "sheetName": "Data",
+        "cell": "C2",
+        "outputVariable": "firstScore",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-log",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 430 },
+      "data": {
+        "nodeType": "logMessage",
+        "label": "Log Results",
+        "message": "Column header: {{headerA}} | First name: {{firstName}} | Score: {{firstScore}}",
+        "level": "SUCCESS",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-close",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 510 },
+      "data": {
+        "nodeType": "closeExcel",
+        "label": "Close Excel",
+        "workbookId": "{{wb}}",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-end",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 590 },
+      "data": { "nodeType": "end", "label": "End", "autoCloseBrowser": false, "restoreWindow": true, "status": "" }
+    }
+  ],
+  "edges": [
+    { "id": "e1", "source": "n-start",   "target": "n-open",    "type": "smoothstep" },
+    { "id": "e2", "source": "n-open",    "target": "n-read-a1", "type": "smoothstep" },
+    { "id": "e3", "source": "n-read-a1", "target": "n-read-a2", "type": "smoothstep" },
+    { "id": "e4", "source": "n-read-a2", "target": "n-read-c2", "type": "smoothstep" },
+    { "id": "e5", "source": "n-read-c2", "target": "n-log",     "type": "smoothstep" },
+    { "id": "e6", "source": "n-log",     "target": "n-close",   "type": "smoothstep" },
+    { "id": "e7", "source": "n-close",   "target": "n-end",     "type": "smoothstep" }
+  ]
+}

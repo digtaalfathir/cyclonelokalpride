@@ -11,6 +11,8 @@ import {
   IconJsonParse, IconStrReplace, IconStrContains, IconDateTime, IconArrLength,
   IconReadFile, IconWriteFile, IconMoveFile, IconDeleteFile, IconFileExists,
   IconCreateDir, IconDirExists,
+  IconExcelOpen, IconExcelReadCell, IconExcelWriteCell,
+  IconExcelReadRange, IconExcelSave, IconExcelClose,
 } from './Icons';
 
 function NodeIcon({ iconKey, size = 14 }) {
@@ -45,8 +47,14 @@ function NodeIcon({ iconKey, size = 14 }) {
     case 'deleteFile':  return <IconDeleteFile size={size} />;
     case 'fileExists':  return <IconFileExists size={size} />;
     case 'createDir':   return <IconCreateDir size={size} />;
-    case 'dirExists':   return <IconDirExists size={size} />;
-    default:            return null;
+    case 'dirExists':      return <IconDirExists size={size} />;
+    case 'excelOpen':      return <IconExcelOpen size={size} />;
+    case 'excelReadCell':  return <IconExcelReadCell size={size} />;
+    case 'excelWriteCell': return <IconExcelWriteCell size={size} />;
+    case 'excelReadRange': return <IconExcelReadRange size={size} />;
+    case 'excelSave':      return <IconExcelSave size={size} />;
+    case 'excelClose':     return <IconExcelClose size={size} />;
+    default:               return null;
   }
 }
 

@@ -1,0 +1,114 @@
+{
+  "name": "Stage 6 Demo Excel — Read Range ForEach",
+  "nodes": [
+    {
+      "id": "n-start",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 30 },
+      "data": { "nodeType": "start", "label": "Start", "status": "" }
+    },
+    {
+      "id": "n-open",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 110 },
+      "data": {
+        "nodeType": "openExcel",
+        "label": "Open Excel",
+        "filePath": "./test-output/sample.xlsx",
+        "outputVariable": "wb",
+        "createIfNotExists": false,
+        "status": ""
+      }
+    },
+    {
+      "id": "n-range",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 190 },
+      "data": {
+        "nodeType": "readRange",
+        "label": "Read Data A2:C5",
+        "workbookId": "{{wb}}",
+        "sheetName": "Data",
+        "range": "A2:C5",
+        "outputVariable": "rows",
+        "skipEmptyRows": true,
+        "status": ""
+      }
+    },
+    {
+      "id": "n-count",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 270 },
+      "data": {
+        "nodeType": "arrayLength",
+        "label": "Count Rows",
+        "inputArray": "{{rows}}",
+        "outputVariable": "rowCount",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-log-header",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 350 },
+      "data": {
+        "nodeType": "logMessage",
+        "label": "Log Count",
+        "message": "Read {{rowCount}} data rows from Excel",
+        "level": "INFO",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-foreach",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 430 },
+      "data": {
+        "nodeType": "forEachNode",
+        "label": "For Each Row",
+        "collection": "{{rows}}",
+        "itemVariable": "row",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-log-row",
+      "type": "workflowNode",
+      "position": { "x": 500, "y": 430 },
+      "data": {
+        "nodeType": "logMessage",
+        "label": "Log Row",
+        "message": "  Name: {{row.0}} | City: {{row.1}} | Score: {{row.2}}",
+        "level": "INFO",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-close",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 520 },
+      "data": {
+        "nodeType": "closeExcel",
+        "label": "Close Excel",
+        "workbookId": "{{wb}}",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-end",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 600 },
+      "data": { "nodeType": "end", "label": "End", "autoCloseBrowser": false, "restoreWindow": true, "status": "" }
+    }
+  ],
+  "edges": [
+    { "id": "e1", "source": "n-start",      "target": "n-open",       "type": "smoothstep" },
+    { "id": "e2", "source": "n-open",        "target": "n-range",      "type": "smoothstep" },
+    { "id": "e3", "source": "n-range",       "target": "n-count",      "type": "smoothstep" },
+    { "id": "e4", "source": "n-count",       "target": "n-log-header", "type": "smoothstep" },
+    { "id": "e5", "source": "n-log-header",  "target": "n-foreach",    "type": "smoothstep" },
+    { "id": "e6", "source": "n-foreach",     "target": "n-log-row",    "type": "smoothstep", "sourceHandle": "body" },
+    { "id": "e7", "source": "n-foreach",     "target": "n-close",      "type": "smoothstep", "sourceHandle": "done" },
+    { "id": "e8", "source": "n-close",       "target": "n-end",        "type": "smoothstep" }
+  ]
+}

@@ -1,0 +1,132 @@
+{
+  "name": "Stage 6 Demo Excel — Write Cell",
+  "nodes": [
+    {
+      "id": "n-start",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 30 },
+      "data": { "nodeType": "start", "label": "Start", "status": "" }
+    },
+    {
+      "id": "n-set-ts",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 110 },
+      "data": {
+        "nodeType": "dateTimeFormat",
+        "label": "Get Current Date",
+        "inputDate": "2026-06-16",
+        "inputFormat": "",
+        "outputFormat": "DD/MM/YYYY",
+        "outputVariable": "today",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-open",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 190 },
+      "data": {
+        "nodeType": "openExcel",
+        "label": "Open Sample Excel",
+        "filePath": "./test-output/sample.xlsx",
+        "outputVariable": "wb",
+        "createIfNotExists": false,
+        "status": ""
+      }
+    },
+    {
+      "id": "n-write-e1",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 270 },
+      "data": {
+        "nodeType": "writeCell",
+        "label": "Write Header E1",
+        "workbookId": "{{wb}}",
+        "sheetName": "Data",
+        "cell": "E1",
+        "value": "Updated",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-write-e2",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 350 },
+      "data": {
+        "nodeType": "writeCell",
+        "label": "Write Date E2",
+        "workbookId": "{{wb}}",
+        "sheetName": "Data",
+        "cell": "E2",
+        "value": "{{today}}",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-write-e3",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 430 },
+      "data": {
+        "nodeType": "writeCell",
+        "label": "Write Number E3",
+        "workbookId": "{{wb}}",
+        "sheetName": "Data",
+        "cell": "E3",
+        "value": "42",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-save",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 510 },
+      "data": {
+        "nodeType": "saveExcel",
+        "label": "Save Excel",
+        "workbookId": "{{wb}}",
+        "saveAs": "",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-close",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 590 },
+      "data": {
+        "nodeType": "closeExcel",
+        "label": "Close Excel",
+        "workbookId": "{{wb}}",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-log",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 670 },
+      "data": {
+        "nodeType": "logMessage",
+        "label": "Log Done",
+        "message": "Excel written and saved. E1=Updated, E2={{today}}, E3=42 (as number)",
+        "level": "SUCCESS",
+        "status": ""
+      }
+    },
+    {
+      "id": "n-end",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 750 },
+      "data": { "nodeType": "end", "label": "End", "autoCloseBrowser": false, "restoreWindow": true, "status": "" }
+    }
+  ],
+  "edges": [
+    { "id": "e1", "source": "n-start",    "target": "n-set-ts",  "type": "smoothstep" },
+    { "id": "e2", "source": "n-set-ts",   "target": "n-open",    "type": "smoothstep" },
+    { "id": "e3", "source": "n-open",     "target": "n-write-e1","type": "smoothstep" },
+    { "id": "e4", "source": "n-write-e1", "target": "n-write-e2","type": "smoothstep" },
+    { "id": "e5", "source": "n-write-e2", "target": "n-write-e3","type": "smoothstep" },
+    { "id": "e6", "source": "n-write-e3", "target": "n-save",    "type": "smoothstep" },
+    { "id": "e7", "source": "n-save",     "target": "n-close",   "type": "smoothstep" },
+    { "id": "e8", "source": "n-close",    "target": "n-log",     "type": "smoothstep" },
+    { "id": "e9", "source": "n-log",      "target": "n-end",     "type": "smoothstep" }
+  ]
+}

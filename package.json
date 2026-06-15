@@ -14,6 +14,7 @@
     "install:frontend": "cd frontend && npm install"
   },
   "dependencies": {
+    "exceljs": "^4.4.0",
     "playwright": "^1.40.0"
   },
   "devDependencies": {
@@ -40,14 +41,18 @@
       {
         "from": "flows",
         "to": "flows",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "win": {
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "assets/icon.png"
