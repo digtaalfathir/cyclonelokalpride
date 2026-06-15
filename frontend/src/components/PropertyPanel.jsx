@@ -4,23 +4,27 @@ import {
   IconGlobe, IconLink, IconType, IconMousePointer,
   IconPlay, IconStopSquare, IconProperties, IconCrosshair, IconSpinner,
   IconVariable, IconClock, IconAPI, IconLog,
+  IconCondition, IconLoop, IconShield,
 } from './Icons';
 
 const api = window.electronAPI || null;
 
 function NodeIcon({ iconKey, size = 15 }) {
   switch (iconKey) {
-    case 'globe':    return <IconGlobe size={size} />;
-    case 'link':     return <IconLink size={size} />;
-    case 'type':     return <IconType size={size} />;
-    case 'mouse':    return <IconMousePointer size={size} />;
-    case 'play':     return <IconPlay size={size} />;
-    case 'stop':     return <IconStopSquare size={size} />;
-    case 'variable': return <IconVariable size={size} />;
-    case 'clock':    return <IconClock size={size} />;
-    case 'api':      return <IconAPI size={size} />;
-    case 'log':      return <IconLog size={size} />;
-    default:         return <IconProperties size={size} />;
+    case 'globe':     return <IconGlobe size={size} />;
+    case 'link':      return <IconLink size={size} />;
+    case 'type':      return <IconType size={size} />;
+    case 'mouse':     return <IconMousePointer size={size} />;
+    case 'play':      return <IconPlay size={size} />;
+    case 'stop':      return <IconStopSquare size={size} />;
+    case 'variable':  return <IconVariable size={size} />;
+    case 'clock':     return <IconClock size={size} />;
+    case 'api':       return <IconAPI size={size} />;
+    case 'log':       return <IconLog size={size} />;
+    case 'condition': return <IconCondition size={size} />;
+    case 'loop':      return <IconLoop size={size} />;
+    case 'shield':    return <IconShield size={size} />;
+    default:          return <IconProperties size={size} />;
   }
 }
 

@@ -1,0 +1,62 @@
+{
+  "name": "Stage 3 Demo IF",
+  "nodes": [
+    {
+      "id": "node-start",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 50 },
+      "data": { "nodeType": "start", "label": "Start", "status": "" }
+    },
+    {
+      "id": "node-set-status",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 160 },
+      "data": { "nodeType": "setVariable", "label": "Set status", "variableName": "status", "value": "200", "status": "" }
+    },
+    {
+      "id": "node-http",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 270 },
+      "data": { "nodeType": "httpRequest", "label": "GET /todos/1", "method": "GET", "url": "https://jsonplaceholder.typicode.com/todos/1", "headers": "", "body": "", "outputVariable": "todo", "status": "" }
+    },
+    {
+      "id": "node-if",
+      "type": "workflowNode",
+      "position": { "x": 300, "y": 390 },
+      "data": { "nodeType": "ifNode", "label": "Is completed?", "condition": "{{todo.data.completed == true}}", "status": "" }
+    },
+    {
+      "id": "node-log-true",
+      "type": "workflowNode",
+      "position": { "x": 150, "y": 510 },
+      "data": { "nodeType": "logMessage", "label": "Log: Done", "message": "Todo #{{todo.data.id}} is COMPLETED: \"{{todo.data.title}}\"", "level": "SUCCESS", "status": "" }
+    },
+    {
+      "id": "node-log-false",
+      "type": "workflowNode",
+      "position": { "x": 450, "y": 510 },
+      "data": { "nodeType": "logMessage", "label": "Log: Pending", "message": "Todo #{{todo.data.id}} is still PENDING: \"{{todo.data.title}}\"", "level": "WARN", "status": "" }
+    },
+    {
+      "id": "node-end-true",
+      "type": "workflowNode",
+      "position": { "x": 150, "y": 620 },
+      "data": { "nodeType": "end", "label": "End (TRUE)", "autoCloseBrowser": true, "restoreWindow": true, "status": "" }
+    },
+    {
+      "id": "node-end-false",
+      "type": "workflowNode",
+      "position": { "x": 450, "y": 620 },
+      "data": { "nodeType": "end", "label": "End (FALSE)", "autoCloseBrowser": true, "restoreWindow": true, "status": "" }
+    }
+  ],
+  "edges": [
+    { "id": "e1", "source": "node-start",      "target": "node-set-status", "type": "smoothstep" },
+    { "id": "e2", "source": "node-set-status", "target": "node-http",       "type": "smoothstep" },
+    { "id": "e3", "source": "node-http",       "target": "node-if",         "type": "smoothstep" },
+    { "id": "e4", "source": "node-if",         "target": "node-log-true",   "type": "smoothstep", "sourceHandle": "true" },
+    { "id": "e5", "source": "node-if",         "target": "node-log-false",  "type": "smoothstep", "sourceHandle": "false" },
+    { "id": "e6", "source": "node-log-true",   "target": "node-end-true",   "type": "smoothstep" },
+    { "id": "e7", "source": "node-log-false",  "target": "node-end-false",  "type": "smoothstep" }
+  ]
+}

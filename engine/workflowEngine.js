@@ -1,17 +1,24 @@
+'use strict';
+
 const EventEmitter = require('events');
 const { PluginRegistry } = require('./pluginRegistry');
 
+// Stage 1
 const startHandler        = require('./nodes/start');
 const openBrowserHandler  = require('./nodes/openBrowser');
 const navigateUrlHandler  = require('./nodes/navigateUrl');
 const inputTextHandler    = require('./nodes/inputText');
 const clickElementHandler = require('./nodes/clickElement');
 const endHandler          = require('./nodes/end');
-// Stage 2 nodes
+// Stage 2
 const setVariableHandler  = require('./nodes/setVariable');
 const logMessageHandler   = require('./nodes/logMessage');
 const delayHandler        = require('./nodes/delay');
 const httpRequestHandler  = require('./nodes/httpRequest');
+// Stage 3
+const ifNodeHandler       = require('./nodes/ifNode');
+const forEachNodeHandler  = require('./nodes/forEachNode');
+const tryCatchNodeHandler = require('./nodes/tryCatchNode');
 
 class WorkflowEngine extends EventEmitter {
   constructor() {
@@ -21,21 +28,25 @@ class WorkflowEngine extends EventEmitter {
       browser: null,
       page: null,
       variables: {},
-      keepBrowserOpen: false,  // set by End node when autoCloseBrowser=false
+      keepBrowserOpen: false,
+      lastError: null,
     };
 
     this.running = false;
     this.aborted = false;
 
-    // Runtime metrics — structured for future extension
     this.metrics = {
-      startTime:     null,   // ms epoch
+      startTime:     null,
       endTime:       null,
       nodesExecuted: 0,
       nodesFailed:   0,
       nodesAborted:  0,
-      nodeTimes:     {},     // { [nodeId]: { label, durationMs, status } }
+      nodeTimes:     {},
     };
+
+    // Graph maps (built per-execution)
+    this.nodeMap    = new Map(); // id → node
+    this.edgesFrom  = new Map(); // id → [{ id, target, sourceHandle }]
 
     this.registry = new PluginRegistry();
     // Stage 1
@@ -50,48 +61,116 @@ class WorkflowEngine extends EventEmitter {
     this.registry.register('logMessage',   logMessageHandler);
     this.registry.register('delay',        delayHandler);
     this.registry.register('httpRequest',  httpRequestHandler);
+    // Stage 3
+    this.registry.register('ifNode',       ifNodeHandler);
+    this.registry.register('forEachNode',  forEachNodeHandler);
+    this.registry.register('tryCatchNode', tryCatchNodeHandler);
   }
 
   // ── Logging ─────────────────────────────────────────────────
   log(level, message) {
-    const timestamp = new Date().toISOString().substr(11, 12); // HH:MM:SS.mmm
+    const timestamp = new Date().toISOString().substr(11, 12);
     this.emit('log', { level, message, timestamp });
   }
 
-  // ── Execution order ─────────────────────────────────────────
-  resolveExecutionOrder(flowData) {
+  // ── Graph helpers ────────────────────────────────────────────
+
+  _buildGraph(flowData) {
     const { nodes, edges } = flowData;
-    const adjacency = {};
+    this.nodeMap   = new Map(nodes.map(n => [n.id, n]));
+    this.edgesFrom = new Map();
     for (const edge of edges) {
-      adjacency[edge.source] = edge.target;
+      if (!this.edgesFrom.has(edge.source)) this.edgesFrom.set(edge.source, []);
+      this.edgesFrom.get(edge.source).push(edge);
+    }
+  }
+
+  /**
+   * Follow outgoing edges from nodeId, filtered by sourceHandle.
+   * handleId === null  →  follow edges with no/null sourceHandle (regular nodes)
+   * handleId === 'xyz' →  follow edges where sourceHandle === 'xyz'
+   */
+  async followEdges(nodeId, handleId) {
+    if (this.aborted) return;
+    const outgoing = this.edgesFrom.get(nodeId) || [];
+    const matching = handleId
+      ? outgoing.filter(e => e.sourceHandle === handleId)
+      : outgoing.filter(e => !e.sourceHandle);
+
+    for (const edge of matching) {
+      if (this.aborted) break;
+      const next = this.nodeMap.get(edge.target);
+      if (next) await this.executeNode(next);
+    }
+  }
+
+  /**
+   * Public method for ForEach / TryCatch handlers to execute a named branch.
+   * Equivalent to followEdges but exposed on the engine instance.
+   */
+  async executeFromHandle(nodeId, handleId) {
+    await this.followEdges(nodeId, handleId);
+  }
+
+  // ── Execute a single node ────────────────────────────────────
+  async executeNode(node) {
+    if (this.aborted) {
+      this.metrics.nodesAborted++;
+      return;
     }
 
-    const startNode = nodes.find(n => n.data?.nodeType === 'start');
-    if (!startNode) throw new Error('No Start node found in workflow.');
+    const nodeType = node.data?.nodeType;
+    const label    = node.data?.label || nodeType;
+    const handler  = this.registry.get(nodeType);
 
-    const ordered = [];
-    const visited = new Set();
-    let currentId = startNode.id;
-
-    while (currentId) {
-      if (visited.has(currentId)) throw new Error(`Circular reference at node ${currentId}.`);
-      visited.add(currentId);
-      const node = nodes.find(n => n.id === currentId);
-      if (!node) throw new Error(`Node ${currentId} not found.`);
-      ordered.push(node);
-      currentId = adjacency[currentId] || null;
+    if (!handler) {
+      this.log('ERROR', `Unknown node type: "${nodeType}"`);
+      this.emit('node-error', { nodeId: node.id, error: `Unknown: ${nodeType}` });
+      this.metrics.nodesFailed++;
+      throw new Error(`Unknown node type: "${nodeType}"`);
     }
 
-    return ordered;
+    this.emit('node-start', node.id);
+    this.log('INFO', `[${label}] Started`);
+
+    const t0 = Date.now();
+    let result;
+
+    try {
+      // nodeId passed as 4th arg so ForEach/TryCatch can call executeFromHandle
+      result = await handler.execute(node.data, this.context, this, node.id);
+      const dur = Date.now() - t0;
+      this.metrics.nodesExecuted++;
+      this.metrics.nodeTimes[node.id] = { label, durationMs: dur, status: 'success' };
+      this.emit('node-complete', node.id);
+      this.log('SUCCESS', `[${label}] Completed (${dur}ms)`);
+    } catch (err) {
+      const dur = Date.now() - t0;
+      this.metrics.nodesFailed++;
+      this.metrics.nodeTimes[node.id] = { label, durationMs: dur, status: 'error', error: err.message };
+      this.emit('node-error', { nodeId: node.id, error: err.message });
+      this.log('ERROR', `[${label}] Failed: ${err.message}`);
+      throw err;
+    }
+
+    // _handled: true means the handler already traversed its own subgraph
+    // (TryCatch). Skip followEdges to avoid double-execution.
+    if (result && result._handled) return;
+
+    const nextHandle = result?.nextHandle ?? null;
+    await this.followEdges(node.id, nextHandle);
   }
 
   // ── Main execute ─────────────────────────────────────────────
   async execute(flowData) {
     this.running = true;
     this.aborted = false;
-    this.context.keepBrowserOpen = false;
 
-    // Reset metrics
+    // Reset per-run state
+    this.context.keepBrowserOpen = false;
+    this.context.variables = {};
+    this.context.lastError  = null;
+
     this.metrics = {
       startTime:     Date.now(),
       endTime:       null,
@@ -101,52 +180,20 @@ class WorkflowEngine extends EventEmitter {
       nodeTimes:     {},
     };
 
-    let success = false;
+    const { nodes = [], edges = [] } = flowData;
+    this._buildGraph(flowData);
+
+    const startNode = nodes.find(n => n.data?.nodeType === 'start');
+    if (!startNode) {
+      this.running = false;
+      return { success: false, error: 'No Start node found in workflow.', metrics: this._snapshotMetrics() };
+    }
+
+    this.log('INFO', `Workflow started — ${nodes.length} node(s), ${edges.length} edge(s).`);
 
     try {
-      const orderedNodes = this.resolveExecutionOrder(flowData);
-      this.log('INFO', `Workflow started — ${orderedNodes.length} step(s).`);
+      await this.executeNode(startNode);
 
-      for (const node of orderedNodes) {
-        if (this.aborted) {
-          this.log('WARN', 'Workflow aborted by user.');
-          this.metrics.nodesAborted++;
-          break;
-        }
-
-        const nodeType = node.data?.nodeType;
-        const label    = node.data?.label || nodeType;
-        const handler  = this.registry.get(nodeType);
-
-        if (!handler) {
-          this.log('ERROR', `Unknown node type: ${nodeType}`);
-          this.emit('node-error', { nodeId: node.id, error: `Unknown: ${nodeType}` });
-          this.metrics.nodesFailed++;
-          continue;
-        }
-
-        this.emit('node-start', node.id);
-        this.log('INFO', `Running: ${label}`);
-
-        const nodeStart = Date.now();
-        try {
-          await handler.execute(node.data, this.context, this);
-          const dur = Date.now() - nodeStart;
-          this.metrics.nodesExecuted++;
-          this.metrics.nodeTimes[node.id] = { label, durationMs: dur, status: 'success' };
-          this.emit('node-complete', node.id);
-          this.log('SUCCESS', `Completed: ${label} (${dur}ms)`);
-        } catch (err) {
-          const dur = Date.now() - nodeStart;
-          this.metrics.nodesFailed++;
-          this.metrics.nodeTimes[node.id] = { label, durationMs: dur, status: 'error', error: err.message };
-          this.emit('node-error', { nodeId: node.id, error: err.message });
-          this.log('ERROR', `Failed: ${label} — ${err.message}`);
-          throw err;
-        }
-      }
-
-      success = true;
       this.metrics.endTime = Date.now();
       const durSec = ((this.metrics.endTime - this.metrics.startTime) / 1000).toFixed(2);
       this.log('SUCCESS', `Workflow finished. Total runtime: ${durSec}s`);
@@ -167,14 +214,10 @@ class WorkflowEngine extends EventEmitter {
   async stop() {
     this.aborted = true;
     this.log('WARN', 'Stop requested — aborting...');
-    await this.cleanup(true); // force close regardless of keepBrowserOpen
+    await this.cleanup(true);
   }
 
   // ── Cleanup ──────────────────────────────────────────────────
-  /**
-   * @param {boolean} force  When true, close browser even if keepBrowserOpen is set.
-   *                         Used by stop() so a manual abort always frees the browser.
-   */
   async cleanup(force = false) {
     try {
       if (this.context.browser && (force || !this.context.keepBrowserOpen)) {
@@ -185,26 +228,23 @@ class WorkflowEngine extends EventEmitter {
     } catch (_) {}
   }
 
-  // ── Metrics snapshot ─────────────────────────────────────────
+  // ── Metrics ──────────────────────────────────────────────────
   _snapshotMetrics() {
     return {
       startTime:     this.metrics.startTime,
-      endTime:       this.metrics.endTime   || Date.now(),
+      endTime:       this.metrics.endTime || Date.now(),
       nodesExecuted: this.metrics.nodesExecuted,
       nodesFailed:   this.metrics.nodesFailed,
       nodesAborted:  this.metrics.nodesAborted,
-      // Derived helpers
-      slowestNode: this._getSlowestNode(),
-      fastestNode: this._getFastestNode(),
+      slowestNode:   this._getSlowestNode(),
+      fastestNode:   this._getFastestNode(),
     };
   }
 
   _getSlowestNode() {
     let slowest = null;
     for (const [id, data] of Object.entries(this.metrics.nodeTimes)) {
-      if (!slowest || data.durationMs > slowest.durationMs) {
-        slowest = { nodeId: id, ...data };
-      }
+      if (!slowest || data.durationMs > slowest.durationMs) slowest = { nodeId: id, ...data };
     }
     return slowest;
   }
@@ -212,9 +252,7 @@ class WorkflowEngine extends EventEmitter {
   _getFastestNode() {
     let fastest = null;
     for (const [id, data] of Object.entries(this.metrics.nodeTimes)) {
-      if (!fastest || data.durationMs < fastest.durationMs) {
-        fastest = { nodeId: id, ...data };
-      }
+      if (!fastest || data.durationMs < fastest.durationMs) fastest = { nodeId: id, ...data };
     }
     return fastest;
   }

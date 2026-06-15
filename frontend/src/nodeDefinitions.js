@@ -176,6 +176,71 @@ export const NODE_DEFINITIONS = [
     hasInput: true,
     hasOutput: true,
   },
+
+  // ── Stage 3 nodes ─────────────────────────────────────────
+  {
+    type: 'ifNode',
+    label: 'IF',
+    category: 'Logic',
+    description: 'Branch workflow based on a condition',
+    iconKey: 'condition',
+    color: '#7C3AED',
+    defaults: { condition: '' },
+    schema: [
+      { key: 'condition', label: 'Condition', type: 'text',
+        placeholder: '{{response.status == 200}}',
+        hint: 'Supports {{variable}} expressions. Routes to TRUE or FALSE branch.' },
+    ],
+    hasInput: true,
+    hasOutput: false,
+    outputHandles: [
+      { id: 'true',  label: 'TRUE',  color: '#16A34A' },
+      { id: 'false', label: 'FALSE', color: '#DC2626' },
+    ],
+  },
+  {
+    type: 'forEachNode',
+    label: 'For Each',
+    category: 'Logic',
+    description: 'Iterate over each item in a collection',
+    iconKey: 'loop',
+    color: '#2563EB',
+    defaults: { collection: '', itemVariable: 'item' },
+    schema: [
+      { key: 'collection',   label: 'Collection',   type: 'text',
+        placeholder: '{{users}}',
+        hint: 'Variable containing an array. Use {{variable}} syntax.' },
+      { key: 'itemVariable', label: 'Item Variable', type: 'text',
+        placeholder: 'item',
+        hint: 'Name for each element (e.g. access with {{item.name}}).' },
+    ],
+    hasInput: true,
+    hasOutput: false,
+    outputHandles: [
+      { id: 'body', label: 'BODY', color: '#2563EB' },
+      { id: 'done', label: 'DONE', color: '#16A34A' },
+    ],
+  },
+  {
+    type: 'tryCatchNode',
+    label: 'Try / Catch',
+    category: 'Logic',
+    description: 'Handle errors without stopping the workflow',
+    iconKey: 'shield',
+    color: '#D97706',
+    defaults: { errorVariable: 'lastError' },
+    schema: [
+      { key: 'errorVariable', label: 'Error Variable', type: 'text',
+        placeholder: 'lastError',
+        hint: 'Variable that stores the error message if TRY fails.' },
+    ],
+    hasInput: true,
+    hasOutput: false,
+    outputHandles: [
+      { id: 'try',   label: 'TRY',   color: '#16A34A' },
+      { id: 'catch', label: 'CATCH', color: '#DC2626' },
+    ],
+  },
 ];
 
 export function getNodesByCategory() {

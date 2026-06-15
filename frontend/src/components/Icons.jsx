@@ -274,6 +274,38 @@ export function IconChevronUp({ size = 14 }) {
   );
 }
 
+// ── Stage 3 icons ─────────────────────────────────────────────
+
+// Diamond / branch — represents IF condition
+export function IconCondition({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 1.5L14.5 8 8 14.5 1.5 8 8 1.5Z" />
+      <path d="M8 5v3.5l2 1.5" />
+    </svg>
+  );
+}
+
+// Circular arrows — represents ForEach loop
+export function IconLoop({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M13.5 8A5.5 5.5 0 1 1 8 2.5" />
+      <path d="M8 1l3 1.5-3 1.5" />
+    </svg>
+  );
+}
+
+// Shield — represents TryCatch / error protection
+export function IconShield({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 1.5L2.5 3.5V8c0 3 2.5 5 5.5 6.5C11 13 13.5 11 13.5 8V3.5L8 1.5Z" />
+      <path d="M5.5 8l2 2 3-3" />
+    </svg>
+  );
+}
+
 // ── Stage 2 icons ─────────────────────────────────────────────
 
 // { } curly braces — represents a variable

@@ -5,6 +5,7 @@ import {
   IconGlobe, IconLink, IconType, IconMousePointer,
   IconPlay, IconStopSquare, IconCheck, IconX, IconSpinner,
   IconVariable, IconClock, IconAPI, IconLog,
+  IconCondition, IconLoop, IconShield,
 } from './Icons';
 
 function NodeIcon({ iconKey, size = 15 }) {
@@ -15,11 +16,14 @@ function NodeIcon({ iconKey, size = 15 }) {
     case 'mouse':    return <IconMousePointer size={size} />;
     case 'play':     return <IconPlay size={size} />;
     case 'stop':     return <IconStopSquare size={size} />;
-    case 'variable': return <IconVariable size={size} />;
-    case 'clock':    return <IconClock size={size} />;
-    case 'api':      return <IconAPI size={size} />;
-    case 'log':      return <IconLog size={size} />;
-    default:         return <span style={{ fontSize: size * 0.85 }}>•</span>;
+    case 'variable':   return <IconVariable size={size} />;
+    case 'clock':      return <IconClock size={size} />;
+    case 'api':        return <IconAPI size={size} />;
+    case 'log':        return <IconLog size={size} />;
+    case 'condition':  return <IconCondition size={size} />;
+    case 'loop':       return <IconLoop size={size} />;
+    case 'shield':     return <IconShield size={size} />;
+    default:           return <span style={{ fontSize: size * 0.85 }}>•</span>;
   }
 }
 
@@ -94,7 +98,37 @@ function WorkflowNode({ data, selected }) {
         </div>
       </div>
 
-      {def.hasOutput && (
+      {def.outputHandles ? (
+        <>
+          <div className="workflow-node__handle-labels">
+            {def.outputHandles.map(h => (
+              <div
+                key={h.id}
+                className="workflow-node__handle-label"
+                style={{ color: h.color }}
+              >
+                {h.label}
+              </div>
+            ))}
+          </div>
+          {def.outputHandles.map((h, i) => (
+            <Handle
+              key={h.id}
+              type="source"
+              position={Position.Bottom}
+              id={h.id}
+              style={{
+                bottom: -5,
+                left: `${(i + 1) / (def.outputHandles.length + 1) * 100}%`,
+                background: h.color,
+                borderColor: h.color,
+                width: 10,
+                height: 10,
+              }}
+            />
+          ))}
+        </>
+      ) : def.hasOutput && (
         <Handle type="source" position={Position.Bottom} style={{ bottom: -5 }} />
       )}
     </div>
