@@ -1,14 +1,17 @@
 /**
- * Element Picker
+ * Element Picker — Live Picker mode
  *
  * Session priority (highest to lowest):
  *   1. Existing user browser found via CDP (ports 9222-9224)
  *   2. Singleton picker browser kept alive from a prior pick call
  *   3. Launch new browser (Chrome → Edge → Chromium)
  *
- * When reusing an existing session the current page is NOT navigated —
- * the user sees exactly the page they left open.
- * When launching fresh the configured URL is loaded.
+ * The singleton browser is NEVER navigated forcibly. The picker injects
+ * the overlay on whatever page the browser is currently showing, so the
+ * user can log in, navigate to any page, and then click Pick without the
+ * browser resetting to the workflow's starting URL.
+ *
+ * URL is only used when launching a BRAND-NEW browser (first-ever pick).
  */
 
 'use strict';
@@ -82,9 +85,9 @@ const PICKER_SCRIPT = `
     '<circle cx="8" cy="8" r="4"/>',
     '<path d="M8 1v3M8 12v3M1 8h3M12 8h3"/>',
     '</svg>',
-    '<span style="font-weight:600">Element Picker</span>',
+    '<span style="font-weight:600">Cyclone Element Picker</span>',
     '<span style="opacity:0.75;font-weight:400">',
-    'Click an element to capture its selector. Press ESC to cancel.',
+    'Navigate to any page, then click an element to capture its selector. ESC to cancel.',
     '</span>',
     '</div>',
   ].join('');
@@ -252,6 +255,32 @@ function isSingletonAlive() {
 }
 
 /**
+ * Return the currently focused/active page in a browser.
+ * Iterates pages in reverse-open order and checks document.hasFocus().
+ * Falls back to the most recently opened page if focus cannot be determined.
+ */
+async function getActivePage(browser) {
+  try {
+    const contexts = browser.contexts();
+    if (!contexts.length) return null;
+    const pages = contexts[0].pages();
+    if (!pages.length) return null;
+    if (pages.length === 1) return pages[0];
+    // Prefer focused page
+    for (const pg of [...pages].reverse()) {
+      try {
+        const focused = await pg.evaluate(() => document.hasFocus());
+        if (focused) return pg;
+      } catch (_) { /* page mid-navigation — skip */ }
+    }
+    // No page reported focus → use the most recently opened one
+    return pages[pages.length - 1];
+  } catch (_) {
+    return null;
+  }
+}
+
+/**
  * Try to attach to a browser the user already has open via the Chrome
  * DevTools Protocol.  Works when Chrome/Edge is running with
  * --remote-debugging-port=<port>.  Silently skips ports that are not
@@ -356,18 +385,22 @@ async function startElementPicker(url, mainWindow = null) {
     }
 
     // ── Priority 2: Reuse our singleton picker browser ─────────
+    // NEVER navigate — user may have logged in or navigated to any page.
+    // Inject the picker on whatever page is currently active.
     if (!session && isSingletonAlive()) {
-      session     = { browser: _singleton.browser, page: _singleton.page, via: 'singleton' };
-      navigated   = false;
-      ownsBrowser = true;
-      if (url) {
-        // Navigate to the configured URL in the existing window
-        await session.page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
-        navigated = true;
+      const activePage = await getActivePage(_singleton.browser);
+      if (activePage) {
+        _singleton.page = activePage; // track the currently active tab
+        session     = { browser: _singleton.browser, page: activePage, via: 'singleton' };
+        ownsBrowser = true;
+      } else {
+        _singleton = null; // browser is empty — fall through to launch
       }
     }
 
     // ── Priority 3: Launch a fresh browser ─────────────────────
+    // URL is used ONLY here, for the very first launch, as a convenience
+    // starting point. Subsequent picks never navigate.
     if (!session) {
       session     = await launchBrowser();
       ownsBrowser = true;
@@ -377,6 +410,12 @@ async function startElementPicker(url, mainWindow = null) {
       }
       // Store as singleton for next pick
       _singleton = { browser: session.browser, page: session.page };
+      // When the user opens a new tab, track it so next pick uses that tab
+      session.browser.on('page', (newPage) => {
+        if (_singleton && _singleton.browser === session.browser) {
+          _singleton.page = newPage;
+        }
+      });
     }
 
     // Bring the browser tab to the foreground

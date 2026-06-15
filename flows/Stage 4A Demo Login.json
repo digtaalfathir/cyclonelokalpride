@@ -1,0 +1,439 @@
+{
+  "name": "Stage 4A Demo Login",
+  "version": "1.0",
+  "nodes": [
+    {
+      "id": "n-start",
+      "type": "workflowNode",
+      "position": {
+        "x": 300,
+        "y": 30
+      },
+      "data": {
+        "nodeType": "start",
+        "label": "Start",
+        "status": "completed"
+      },
+      "width": 196,
+      "height": 49,
+      "positionAbsolute": {
+        "x": 300,
+        "y": 30
+      }
+    },
+    {
+      "id": "n-open",
+      "type": "workflowNode",
+      "position": {
+        "x": 300,
+        "y": 110
+      },
+      "data": {
+        "nodeType": "openBrowser",
+        "label": "Open Browser",
+        "headless": false,
+        "status": "completed"
+      },
+      "width": 196,
+      "height": 49,
+      "positionAbsolute": {
+        "x": 300,
+        "y": 110
+      }
+    },
+    {
+      "id": "n-nav",
+      "type": "workflowNode",
+      "position": {
+        "x": 300,
+        "y": 190
+      },
+      "data": {
+        "nodeType": "navigateUrl",
+        "label": "Navigate Login Page",
+        "url": "https://practicetestautomation.com/practice-test-login/",
+        "status": "completed"
+      },
+      "width": 240,
+      "height": 54,
+      "selected": false,
+      "dragging": false,
+      "positionAbsolute": {
+        "x": 300,
+        "y": 190
+      }
+    },
+    {
+      "id": "n-user",
+      "type": "workflowNode",
+      "position": {
+        "x": 300,
+        "y": 270
+      },
+      "data": {
+        "nodeType": "inputText",
+        "label": "Input Username",
+        "selector": "#username",
+        "value": "student",
+        "clearFirst": true,
+        "status": "completed"
+      },
+      "width": 196,
+      "height": 54,
+      "selected": false,
+      "dragging": false,
+      "positionAbsolute": {
+        "x": 300,
+        "y": 270
+      }
+    },
+    {
+      "id": "n-pass",
+      "type": "workflowNode",
+      "position": {
+        "x": 300,
+        "y": 350
+      },
+      "data": {
+        "nodeType": "inputText",
+        "label": "Input Password",
+        "selector": "#password",
+        "value": "Password123",
+        "clearFirst": true,
+        "status": "completed"
+      },
+      "width": 196,
+      "height": 54,
+      "positionAbsolute": {
+        "x": 300,
+        "y": 350
+      }
+    },
+    {
+      "id": "n-login",
+      "type": "workflowNode",
+      "position": {
+        "x": 300,
+        "y": 430
+      },
+      "data": {
+        "nodeType": "clickElement",
+        "label": "Click Login",
+        "selector": "#submit",
+        "doubleClick": false,
+        "waitNavigation": true,
+        "status": "completed"
+      },
+      "width": 196,
+      "height": 54,
+      "selected": false,
+      "dragging": false,
+      "positionAbsolute": {
+        "x": 300,
+        "y": 430
+      }
+    },
+    {
+      "id": "n-wait-url",
+      "type": "workflowNode",
+      "position": {
+        "x": 300,
+        "y": 520
+      },
+      "data": {
+        "nodeType": "waitUrl",
+        "label": "Wait: Success Page",
+        "expectedUrl": "practicetestautomation.com/logged-in-successfully/",
+        "timeout": "15000",
+        "status": "completed"
+      },
+      "width": 196,
+      "height": 49,
+      "selected": false,
+      "dragging": false,
+      "positionAbsolute": {
+        "x": 300,
+        "y": 520
+      }
+    },
+    {
+      "id": "n-get-url",
+      "type": "workflowNode",
+      "position": {
+        "x": 300,
+        "y": 600
+      },
+      "data": {
+        "nodeType": "getCurrentUrl",
+        "label": "Get Current URL",
+        "outputVariable": "currentUrl",
+        "status": "completed"
+      },
+      "width": 196,
+      "height": 49,
+      "selected": false,
+      "dragging": false,
+      "positionAbsolute": {
+        "x": 300,
+        "y": 600
+      }
+    },
+    {
+      "id": "n-get-text",
+      "type": "workflowNode",
+      "position": {
+        "x": 300,
+        "y": 680
+      },
+      "data": {
+        "nodeType": "getText",
+        "label": "Get Success Heading",
+        "selector": "h1.post-title",
+        "outputVariable": "successMessage",
+        "timeout": "10000",
+        "status": "completed"
+      },
+      "width": 196,
+      "height": 49,
+      "selected": false,
+      "dragging": false,
+      "positionAbsolute": {
+        "x": 300,
+        "y": 680
+      }
+    },
+    {
+      "id": "n-log",
+      "type": "workflowNode",
+      "position": {
+        "x": 300,
+        "y": 760
+      },
+      "data": {
+        "nodeType": "logMessage",
+        "label": "Log Result",
+        "message": "Login OK | URL: {{currentUrl}} | Heading: {{successMessage}}",
+        "level": "SUCCESS",
+        "status": "completed"
+      },
+      "width": 196,
+      "height": 49,
+      "selected": false,
+      "dragging": false,
+      "positionAbsolute": {
+        "x": 300,
+        "y": 760
+      }
+    },
+    {
+      "id": "n-wait-logout",
+      "type": "workflowNode",
+      "position": {
+        "x": 300,
+        "y": 840
+      },
+      "data": {
+        "nodeType": "waitElement",
+        "label": "Wait: Logout Button",
+        "selector": "a.wp-block-button__link.has-text-color.has-background.has-very-dark-gray-background-color",
+        "state": "visible",
+        "timeout": "10000",
+        "status": "completed"
+      },
+      "width": 196,
+      "height": 49,
+      "selected": false,
+      "dragging": false,
+      "positionAbsolute": {
+        "x": 300,
+        "y": 840
+      }
+    },
+    {
+      "id": "n-logout",
+      "type": "workflowNode",
+      "position": {
+        "x": 300,
+        "y": 920
+      },
+      "data": {
+        "nodeType": "clickElement",
+        "label": "Click Logout",
+        "selector": "a.wp-block-button__link.has-text-color.has-background.has-very-dark-gray-background-color",
+        "doubleClick": false,
+        "waitNavigation": true,
+        "status": "completed"
+      },
+      "width": 240,
+      "height": 54,
+      "selected": false,
+      "dragging": false,
+      "positionAbsolute": {
+        "x": 300,
+        "y": 920
+      }
+    },
+    {
+      "id": "n-end",
+      "type": "workflowNode",
+      "position": {
+        "x": 300,
+        "y": 1010
+      },
+      "data": {
+        "nodeType": "end",
+        "label": "End",
+        "autoCloseBrowser": true,
+        "restoreWindow": true,
+        "status": "completed"
+      },
+      "width": 196,
+      "height": 49,
+      "selected": true,
+      "dragging": false,
+      "positionAbsolute": {
+        "x": 300,
+        "y": 1010
+      }
+    }
+  ],
+  "edges": [
+    {
+      "animated": false,
+      "style": {
+        "stroke": "#9CA3AF",
+        "strokeWidth": 1.5
+      },
+      "type": "smoothstep",
+      "id": "e1",
+      "source": "n-start",
+      "target": "n-open"
+    },
+    {
+      "animated": false,
+      "style": {
+        "stroke": "#9CA3AF",
+        "strokeWidth": 1.5
+      },
+      "type": "smoothstep",
+      "id": "e2",
+      "source": "n-open",
+      "target": "n-nav"
+    },
+    {
+      "animated": false,
+      "style": {
+        "stroke": "#9CA3AF",
+        "strokeWidth": 1.5
+      },
+      "type": "smoothstep",
+      "id": "e3",
+      "source": "n-nav",
+      "target": "n-user"
+    },
+    {
+      "animated": false,
+      "style": {
+        "stroke": "#9CA3AF",
+        "strokeWidth": 1.5
+      },
+      "type": "smoothstep",
+      "id": "e4",
+      "source": "n-user",
+      "target": "n-pass"
+    },
+    {
+      "animated": false,
+      "style": {
+        "stroke": "#9CA3AF",
+        "strokeWidth": 1.5
+      },
+      "type": "smoothstep",
+      "id": "e5",
+      "source": "n-pass",
+      "target": "n-login"
+    },
+    {
+      "animated": false,
+      "style": {
+        "stroke": "#9CA3AF",
+        "strokeWidth": 1.5
+      },
+      "type": "smoothstep",
+      "id": "e6",
+      "source": "n-login",
+      "target": "n-wait-url"
+    },
+    {
+      "animated": false,
+      "style": {
+        "stroke": "#9CA3AF",
+        "strokeWidth": 1.5
+      },
+      "type": "smoothstep",
+      "id": "e7",
+      "source": "n-wait-url",
+      "target": "n-get-url"
+    },
+    {
+      "animated": false,
+      "style": {
+        "stroke": "#9CA3AF",
+        "strokeWidth": 1.5
+      },
+      "type": "smoothstep",
+      "id": "e8",
+      "source": "n-get-url",
+      "target": "n-get-text"
+    },
+    {
+      "animated": false,
+      "style": {
+        "stroke": "#9CA3AF",
+        "strokeWidth": 1.5
+      },
+      "type": "smoothstep",
+      "id": "e9",
+      "source": "n-get-text",
+      "target": "n-log"
+    },
+    {
+      "animated": false,
+      "style": {
+        "stroke": "#9CA3AF",
+        "strokeWidth": 1.5
+      },
+      "type": "smoothstep",
+      "id": "e10",
+      "source": "n-log",
+      "target": "n-wait-logout"
+    },
+    {
+      "animated": false,
+      "style": {
+        "stroke": "#9CA3AF",
+        "strokeWidth": 1.5
+      },
+      "type": "smoothstep",
+      "id": "e11",
+      "source": "n-wait-logout",
+      "target": "n-logout"
+    },
+    {
+      "animated": false,
+      "style": {
+        "stroke": "#9CA3AF",
+        "strokeWidth": 1.5
+      },
+      "type": "smoothstep",
+      "id": "e12",
+      "source": "n-logout",
+      "target": "n-end"
+    }
+  ],
+  "viewport": {
+    "x": 436.5491651205937,
+    "y": 13.454810495626873,
+    "zoom": 0.6272638925700149
+  }
+}

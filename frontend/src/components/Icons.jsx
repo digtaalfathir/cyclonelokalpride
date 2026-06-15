@@ -274,6 +274,73 @@ export function IconChevronUp({ size = 14 }) {
   );
 }
 
+// ── Stage 4A icons ────────────────────────────────────────────
+
+// Clock + URL address bar — Wait URL
+export function IconWaitUrl({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1.5 3.5h13" />
+      <circle cx="8" cy="10" r="4.5" />
+      <path d="M8 7.5v2.5l2 1.5" />
+    </svg>
+  );
+}
+
+// CSS selector brackets + small clock — Wait Element
+export function IconWaitEl({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 3H2.5v10H4M12 3h1.5v10H12" />
+      <circle cx="8" cy="8" r="2.5" />
+      <path d="M8 6.5V8l1 1" />
+    </svg>
+  );
+}
+
+// Document + refresh arc — Wait Page Load
+export function IconWaitLoad({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M7.5 2H3.5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1H8" />
+      <path d="M7.5 2v3H11" />
+      <path d="M11 9a3.5 3.5 0 1 0 3.5 3.5" />
+      <path d="M14.5 9v3.5H11" />
+    </svg>
+  );
+}
+
+// Link + export arrow — Get Current URL
+export function IconGetUrl({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5.5 9.5a3 3 0 0 1 0-4.5l.5-.5a3 3 0 0 1 4 4L9.5 9" />
+      <path d="M10 7a3 3 0 0 1 0 4l-.5.5a3 3 0 0 1-4-4L6 7" />
+      <path d="M12.5 2h3v3M15.5 2l-3.5 3.5" />
+    </svg>
+  );
+}
+
+// Letter T + right arrow — Get Text
+export function IconGetText({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2.5 4.5h7M6 4.5v7" />
+      <path d="M10 10h5M12.5 7.5l2.5 2.5-2.5 2.5" />
+    </svg>
+  );
+}
+
+// Dashed element frame + check — Element Exists
+export function IconExists({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1.5" y="3" width="9" height="10" rx="1.5" strokeDasharray="2.5 1.5" />
+      <path d="M11 9l2 2 3-3" />
+    </svg>
+  );
+}
+
 // ── Stage 3 icons ─────────────────────────────────────────────
 
 // Diamond / branch — represents IF condition

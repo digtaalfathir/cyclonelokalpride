@@ -5,6 +5,8 @@ import {
   IconPlay, IconStopSquare, IconProperties, IconCrosshair, IconSpinner,
   IconVariable, IconClock, IconAPI, IconLog,
   IconCondition, IconLoop, IconShield,
+  IconWaitUrl, IconWaitEl, IconWaitLoad,
+  IconGetUrl, IconGetText, IconExists,
 } from './Icons';
 
 const api = window.electronAPI || null;
@@ -24,6 +26,12 @@ function NodeIcon({ iconKey, size = 15 }) {
     case 'condition': return <IconCondition size={size} />;
     case 'loop':      return <IconLoop size={size} />;
     case 'shield':    return <IconShield size={size} />;
+    case 'waitUrl':   return <IconWaitUrl size={size} />;
+    case 'waitEl':    return <IconWaitEl size={size} />;
+    case 'waitLoad':  return <IconWaitLoad size={size} />;
+    case 'getUrl':    return <IconGetUrl size={size} />;
+    case 'getText':   return <IconGetText size={size} />;
+    case 'exists':    return <IconExists size={size} />;
     default:          return <IconProperties size={size} />;
   }
 }
@@ -63,11 +71,11 @@ export default function PropertyPanel({ selectedNode, onNodeUpdate, nodes }) {
       alert('Element Picker is only available in Electron mode.\nRun: npm run dev');
       return;
     }
-    const url = findNavigateUrl();
-    if (!url) {
-      alert('Add a "Navigate URL" node with a URL first so the\nElement Picker knows which page to open.');
-      return;
-    }
+
+    // URL is optional: used only when launching a brand-new browser for the
+    // first time. If the singleton browser is already open it is ignored —
+    // the picker attaches to whatever page is currently active.
+    const url = findNavigateUrl() || null;
 
     setPicking(true);
     setPickingField(fieldKey);

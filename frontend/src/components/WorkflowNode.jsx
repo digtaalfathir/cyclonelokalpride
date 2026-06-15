@@ -6,6 +6,8 @@ import {
   IconPlay, IconStopSquare, IconCheck, IconX, IconSpinner,
   IconVariable, IconClock, IconAPI, IconLog,
   IconCondition, IconLoop, IconShield,
+  IconWaitUrl, IconWaitEl, IconWaitLoad,
+  IconGetUrl, IconGetText, IconExists,
 } from './Icons';
 
 function NodeIcon({ iconKey, size = 15 }) {
@@ -23,6 +25,12 @@ function NodeIcon({ iconKey, size = 15 }) {
     case 'condition':  return <IconCondition size={size} />;
     case 'loop':       return <IconLoop size={size} />;
     case 'shield':     return <IconShield size={size} />;
+    case 'waitUrl':    return <IconWaitUrl size={size} />;
+    case 'waitEl':     return <IconWaitEl size={size} />;
+    case 'waitLoad':   return <IconWaitLoad size={size} />;
+    case 'getUrl':     return <IconGetUrl size={size} />;
+    case 'getText':    return <IconGetText size={size} />;
+    case 'exists':     return <IconExists size={size} />;
     default:           return <span style={{ fontSize: size * 0.85 }}>•</span>;
   }
 }

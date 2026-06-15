@@ -19,6 +19,13 @@ const httpRequestHandler  = require('./nodes/httpRequest');
 const ifNodeHandler       = require('./nodes/ifNode');
 const forEachNodeHandler  = require('./nodes/forEachNode');
 const tryCatchNodeHandler = require('./nodes/tryCatchNode');
+// Stage 4A — Browser Automation
+const waitUrlHandler       = require('./nodes/waitUrl');
+const waitElementHandler   = require('./nodes/waitElement');
+const waitPageLoadHandler  = require('./nodes/waitPageLoad');
+const getCurrentUrlHandler = require('./nodes/getCurrentUrl');
+const getTextHandler       = require('./nodes/getText');
+const elementExistsHandler = require('./nodes/elementExists');
 
 class WorkflowEngine extends EventEmitter {
   constructor() {
@@ -65,6 +72,13 @@ class WorkflowEngine extends EventEmitter {
     this.registry.register('ifNode',       ifNodeHandler);
     this.registry.register('forEachNode',  forEachNodeHandler);
     this.registry.register('tryCatchNode', tryCatchNodeHandler);
+    // Stage 4A — Browser Automation
+    this.registry.register('waitUrl',       waitUrlHandler);
+    this.registry.register('waitElement',   waitElementHandler);
+    this.registry.register('waitPageLoad',  waitPageLoadHandler);
+    this.registry.register('getCurrentUrl', getCurrentUrlHandler);
+    this.registry.register('getText',       getTextHandler);
+    this.registry.register('elementExists', elementExistsHandler);
   }
 
   // ── Logging ─────────────────────────────────────────────────
