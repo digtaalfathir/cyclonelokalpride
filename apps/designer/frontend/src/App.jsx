@@ -22,6 +22,11 @@ import DashboardModal from './components/DashboardModal';
 import ValidationModal from './components/ValidationModal';
 import RunParamsModal from './components/RunParamsModal';
 import DebugToolbar from './components/DebugToolbar';
+import { AuditModal } from './components/AuditModal';
+import { RobotManagerModal } from './components/RobotManagerModal';
+import { SettingsModal } from './components/SettingsModal';
+import { AboutModal } from './components/AboutModal';
+import { Tooltip } from './components/Tooltip';
 import { BreakpointContext } from './contexts/BreakpointContext';
 import { getNodeDefinition } from './nodeDefinitions';
 import {
@@ -31,7 +36,7 @@ import {
   IconProperties, IconMinimize, IconMaximize, IconClose,
   IconPanelBottom, IconChevronUp, IconChevronDown,
   IconPublish, IconHistory, IconScheduler, IconDashboard,
-  IconUndo, IconRedo,
+  IconUndo, IconRedo, IconAudit, IconRobotNetwork, IconBell,
 } from './components/Icons';
 
 const api = window.electronAPI || null;
@@ -88,6 +93,51 @@ function validateWorkflow(nodes, edges) {
   return { errors, warnings, valid: errors.length === 0 };
 }
 
+// ── Toolbar overflow "More" menu ──────────────────────────────────────
+function MoreMenu({ onScheduler, onDashboard, onRobots, onAudit, onSettings }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [open]);
+
+  const item = (icon, label, action) => (
+    <button className="more-menu__item" onClick={() => { setOpen(false); action(); }}>
+      <span className="more-menu__icon">{icon}</span> {label}
+    </button>
+  );
+
+  return (
+    <div className="more-menu" ref={ref}>
+      <Tooltip text="More tools">
+        <button
+          className={`toolbar__btn more-menu__trigger${open ? ' more-menu__trigger--open' : ''}`}
+          onClick={() => setOpen(o => !o)}
+        >
+          <IconSettings size={13} /> Tools ▾
+        </button>
+      </Tooltip>
+      {open && (
+        <div className="more-menu__panel">
+          <div className="more-menu__section-label">Automation</div>
+          {item(<IconScheduler size={14} />, 'Scheduler', onScheduler)}
+          {item(<IconDashboard size={14} />, 'Dashboard', onDashboard)}
+          <div className="more-menu__divider" />
+          <div className="more-menu__section-label">Robots & Infra</div>
+          {item(<IconRobotNetwork size={14} />, 'Robot Manager', onRobots)}
+          {item(<IconAudit size={14} />,       'Audit Log',     onAudit)}
+          <div className="more-menu__divider" />
+          {item(<IconBell size={14} />,         'Notifications & Settings', onSettings)}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function App() {
   const reactFlowWrapper  = useRef(null);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
@@ -105,6 +155,7 @@ export default function App() {
     if (isUndoRedoRef.current) return;
     setPast(p => [...p.slice(-49), { nodes: JSON.parse(JSON.stringify(newNodes)), edges: JSON.parse(JSON.stringify(newEdges)) }]);
     setFuture([]);
+    setIsDirty(true);
   }, []);
 
   const undo = useCallback(() => {
@@ -275,7 +326,20 @@ export default function App() {
   // Stage 9 — Scheduler
   const [schedulerOpen,  setSchedulerOpen] = useState(false);
   // Stage 11 — Controller Dashboard
-  const [dashboardOpen,  setDashboardOpen] = useState(false);
+  const [dashboardOpen,    setDashboardOpen]    = useState(false);
+  // Tier-3 modals
+  const [auditOpen,        setAuditOpen]        = useState(false);
+  const [robotMgrOpen,     setRobotMgrOpen]     = useState(false);
+  const [settingsOpen,     setSettingsOpen]      = useState(false);
+  // UI polish
+  const [aboutOpen,        setAboutOpen]        = useState(false);
+  const [isDirty,          setIsDirty]          = useState(false);
+  const [recentFiles,      setRecentFiles]      = useState(() => {
+    try { return JSON.parse(localStorage.getItem('cyclone_recent') || '[]'); } catch { return []; }
+  });
+  const [recentOpen,       setRecentOpen]       = useState(false);
+  const [leftPanelWidth,   setLeftPanelWidth]   = useState(240);
+  const leftResizeRef = useRef({ dragging: false, startX: 0, startW: 240 });
   // Feature 7 — Validation modal
   const [validationResult, setValidationResult] = useState(null);
   const [pendingRunParams, setPendingRunParams]  = useState(null); // callback after validation OK
@@ -304,6 +368,32 @@ export default function App() {
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup',   onMouseUp);
   }, [bottomOpen, bottomHeight]);
+
+  // ── Left panel resize ──────────────────────────────────────────────
+  const onLeftResizeStart = useCallback((e) => {
+    e.preventDefault();
+    leftResizeRef.current = { dragging: true, startX: e.clientX, startW: leftPanelWidth };
+    const onMouseMove = (ev) => {
+      const delta = ev.clientX - leftResizeRef.current.startX;
+      const next  = Math.max(180, Math.min(420, leftResizeRef.current.startW + delta));
+      setLeftPanelWidth(next);
+    };
+    const onMouseUp = () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup',   onMouseUp);
+    };
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup',   onMouseUp);
+  }, [leftPanelWidth]);
+
+  // ── Recent files helpers ────────────────────────────────────────────
+  const addToRecent = useCallback((name) => {
+    setRecentFiles(prev => {
+      const next = [name, ...prev.filter(n => n !== name)].slice(0, 5);
+      try { localStorage.setItem('cyclone_recent', JSON.stringify(next)); } catch (_) {}
+      return next;
+    });
+  }, []);
 
   // ── Engine event listeners ─────────────────────────────────────────
   useEffect(() => {
@@ -430,7 +520,7 @@ export default function App() {
     if (!data) return;
     if (api) {
       const r = await api.saveFlow(flowName, data);
-      if (r.success) addLog('SUCCESS', `Saved: ${r.path}`);
+      if (r.success) { addLog('SUCCESS', `Saved: ${r.path}`); setIsDirty(false); addToRecent(flowName); }
     } else {
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -444,8 +534,8 @@ export default function App() {
     const data = getFlowData();
     if (!data || !api) return;
     const r = await api.saveFlowAs(data);
-    if (r.success) { setFlowName(r.name); addLog('SUCCESS', `Saved as: ${r.path}`); }
-  }, [getFlowData]);
+    if (r.success) { setFlowName(r.name); setIsDirty(false); addToRecent(r.name); addLog('SUCCESS', `Saved as: ${r.path}`); }
+  }, [getFlowData, addToRecent]);
 
   const handleOpen = useCallback(async () => {
     if (api) {
@@ -459,6 +549,8 @@ export default function App() {
         setFuture([]);
         setBreakpoints(new Set());
         if (r.data.viewport && reactFlowInstance) reactFlowInstance.setViewport(r.data.viewport);
+        setIsDirty(false);
+        addToRecent(r.name);
         addLog('INFO', `Opened: ${r.name}`);
       }
     } else {
@@ -604,11 +696,13 @@ export default function App() {
       {/* ── Title Bar ──────────────────────────────────────────── */}
       <header className="title-bar">
         <div className="title-bar__brand">
-          <div className="title-bar__logo"><LogoMark size={20} /></div>
-          <span className="title-bar__name"><em>Cyclone</em> Studio</span>
+          <span className="title-bar__name"><em>Stechoq</em> Cyclone Studio</span>
         </div>
         <div className="title-bar__divider" />
-        <span className="title-bar__flow">{flowName}</span>
+        <span className="title-bar__flow">
+          {isDirty && <span className="title-bar__dirty" title="Unsaved changes">●</span>}
+          {flowName}
+        </span>
         <div className="title-bar__spacer" />
         <div className="title-bar__wincontrols">
           <button className="winctrl" onClick={() => api?.minimize()} title="Minimize"><IconMinimize size={11} /></button>
@@ -620,16 +714,52 @@ export default function App() {
       {/* ── Toolbar ────────────────────────────────────────────── */}
       <div className="toolbar" id="toolbar">
         <div className="toolbar__group">
-          <button className="toolbar__btn" onClick={handleOpen} title="Open workflow (Ctrl+O)">
-            <IconFolderOpen size={14} /> Open
-          </button>
-          <button className="toolbar__btn" onClick={handleSave} title="Save workflow (Ctrl+S)">
-            <IconSave size={14} /> Save
-          </button>
-          {api && (
-            <button className="toolbar__btn" onClick={handleSaveAs} title="Save as new file">
-              <IconDocument size={14} /> Save As
+          <Tooltip text="Open workflow" shortcut="Ctrl+O">
+            <button className="toolbar__btn" onClick={handleOpen}>
+              <IconFolderOpen size={14} /> Open
             </button>
+          </Tooltip>
+
+          {/* Recent files dropdown */}
+          {recentFiles.length > 0 && (
+            <div className="recent-files" onMouseLeave={() => setRecentOpen(false)}>
+              <button
+                className="toolbar__btn toolbar__btn--icon"
+                onClick={() => setRecentOpen(o => !o)}
+                title="Recent files"
+              >▾</button>
+              {recentOpen && (
+                <div className="recent-files__menu">
+                  <div className="recent-files__label">Recent</div>
+                  {recentFiles.map(name => (
+                    <button key={name} className="recent-files__item" onClick={async () => {
+                      setRecentOpen(false);
+                      if (!api) return;
+                      const r = await api.openFlow();
+                      if (r.success) {
+                        setFlowName(r.name); setNodes(r.data.nodes || []); setEdges(r.data.edges || []);
+                        setPast([]); setFuture([]); setBreakpoints(new Set()); setIsDirty(false); addToRecent(r.name);
+                      }
+                    }}>
+                      {name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          <Tooltip text="Save workflow" shortcut="Ctrl+S">
+            <button className="toolbar__btn" onClick={handleSave}>
+              <IconSave size={14} /> {isDirty ? <span className="toolbar__dirty-dot">●</span> : null} Save
+            </button>
+          </Tooltip>
+          {api && (
+            <Tooltip text="Save as new file">
+              <button className="toolbar__btn" onClick={handleSaveAs}>
+                <IconDocument size={14} /> Save As
+              </button>
+            </Tooltip>
           )}
         </div>
 
@@ -637,51 +767,45 @@ export default function App() {
 
         {/* Undo/Redo — Feature 6 */}
         <div className="toolbar__group">
-          <button
-            className="toolbar__btn"
-            onClick={undo}
-            disabled={!canUndo}
-            title="Undo (Ctrl+Z)"
-          >
-            <IconUndo size={14} /> Undo
-          </button>
-          <button
-            className="toolbar__btn"
-            onClick={redo}
-            disabled={!canRedo}
-            title="Redo (Ctrl+Y)"
-          >
-            <IconRedo size={14} /> Redo
-          </button>
+          <Tooltip text="Undo" shortcut="Ctrl+Z">
+            <button className="toolbar__btn" onClick={undo} disabled={!canUndo}>
+              <IconUndo size={14} /> Undo
+            </button>
+          </Tooltip>
+          <Tooltip text="Redo" shortcut="Ctrl+Y">
+            <button className="toolbar__btn" onClick={redo} disabled={!canRedo}>
+              <IconRedo size={14} /> Redo
+            </button>
+          </Tooltip>
         </div>
 
         <div className="toolbar__sep" />
 
         <div className="toolbar__group">
-          <button
-            className="toolbar__btn toolbar__btn--primary"
-            onClick={handleExecute}
-            disabled={engineStatus === 'running' || engineStatus === 'pending'}
-            title="Run workflow (F5)"
-          >
-            <IconPlay size={13} /> Run
-          </button>
-          <button
-            className="toolbar__btn"
-            onClick={handleRunWithParams}
-            disabled={engineStatus === 'running' || engineStatus === 'pending'}
-            title="Run with initial variables (Feature 8)"
-          >
-            ⚡ Params
-          </button>
-          {(engineStatus === 'running' || engineStatus === 'pending' || debugState) && (
+          <Tooltip text="Run workflow" shortcut="F5">
             <button
-              className="toolbar__btn toolbar__btn--danger"
-              onClick={handleStop}
-              title="Stop execution"
+              className="toolbar__btn toolbar__btn--primary"
+              onClick={handleExecute}
+              disabled={engineStatus === 'running' || engineStatus === 'pending'}
             >
-              <IconStopSquare size={13} /> Stop
+              <IconPlay size={13} /> Run
             </button>
+          </Tooltip>
+          <Tooltip text="Run with initial variables">
+            <button
+              className="toolbar__btn"
+              onClick={handleRunWithParams}
+              disabled={engineStatus === 'running' || engineStatus === 'pending'}
+            >
+              ⚡ Params
+            </button>
+          </Tooltip>
+          {(engineStatus === 'running' || engineStatus === 'pending' || debugState) && (
+            <Tooltip text="Stop execution" shortcut="Ctrl+Q">
+              <button className="toolbar__btn toolbar__btn--danger" onClick={handleStop}>
+                <IconStopSquare size={13} /> Stop
+              </button>
+            </Tooltip>
           )}
         </div>
 
@@ -689,48 +813,57 @@ export default function App() {
 
         {api && (
           <div className="toolbar__group">
-            <button
-              className="toolbar__btn toolbar__btn--publish"
-              onClick={() => setPubDialogOpen(true)}
-              disabled={engineStatus === 'running' || engineStatus === 'pending'}
-              title="Publish this workflow as a versioned release"
-            >
-              <IconPublish size={13} />
-              {publishedVersion ? `Publish (v${publishedVersion})` : 'Publish'}
-            </button>
-            <button className="toolbar__btn" onClick={() => setHistoryOpen(true)} title="View versions and run history">
-              <IconHistory size={13} /> History
-            </button>
-            <button className="toolbar__btn" onClick={() => setSchedulerOpen(true)} title="Manage task schedules">
-              <IconScheduler size={13} /> Scheduler
-            </button>
-            <button className="toolbar__btn" onClick={() => setDashboardOpen(true)} title="Controller Dashboard">
-              <IconDashboard size={13} /> Dashboard
-            </button>
+            <Tooltip text="Publish as versioned release">
+              <button
+                className="toolbar__btn toolbar__btn--publish"
+                onClick={() => setPubDialogOpen(true)}
+                disabled={engineStatus === 'running' || engineStatus === 'pending'}
+              >
+                <IconPublish size={13} />
+                {publishedVersion ? `v${publishedVersion}` : 'Publish'}
+              </button>
+            </Tooltip>
+            <Tooltip text="Version history & run logs">
+              <button className="toolbar__btn" onClick={() => setHistoryOpen(true)}>
+                <IconHistory size={13} /> History
+              </button>
+            </Tooltip>
           </div>
         )}
 
-        <div className="toolbar__sep" />
+        {/* ── Overflow "More" menu ──────────────────────────────── */}
+        {api && <MoreMenu
+          onScheduler={() => setSchedulerOpen(true)}
+          onDashboard={() => setDashboardOpen(true)}
+          onRobots={() => setRobotMgrOpen(true)}
+          onAudit={() => setAuditOpen(true)}
+          onSettings={() => setSettingsOpen(true)}
+        />}
+
+        <div className="toolbar__spacer" />
 
         <div className="toolbar__flow-info">
           <strong>{flowName}</strong>
-          &nbsp;&mdash;&nbsp;
-          {nodes.length} {nodes.length === 1 ? 'node' : 'nodes'}, {edges.length} {edges.length === 1 ? 'connection' : 'connections'}
-          {breakpoints.size > 0 && (
-            <span className="toolbar__bp-badge" title={`${breakpoints.size} breakpoint(s)`}>
-              ⬤ {breakpoints.size}
-            </span>
+          {nodes.length > 0 && (
+            <>
+              &nbsp;&mdash;&nbsp;
+              {nodes.length}n · {edges.length}e
+              {breakpoints.size > 0 && (
+                <span className="toolbar__bp-badge" title={`${breakpoints.size} breakpoint(s)`}>
+                  ⬤ {breakpoints.size}
+                </span>
+              )}
+            </>
           )}
-        </div>
-
-        <div style={{ marginLeft: 'auto' }}>
-          <button className="toolbar__btn" title="Settings"><IconSettings size={14} /></button>
         </div>
       </div>
 
       {/* ── Workspace ──────────────────────────────────────────── */}
       <div className="workspace">
-        <NodePalette />
+        <div className="left-panel" style={{ width: leftPanelWidth, minWidth: leftPanelWidth }}>
+          <NodePalette />
+          <div className="left-panel__resize-handle" onMouseDown={onLeftResizeStart} title="Drag to resize panel" />
+        </div>
 
         <div className="canvas-container" ref={reactFlowWrapper} onDrop={onDrop} onDragOver={onDragOver}>
 
@@ -773,15 +906,19 @@ export default function App() {
             {nodes.length === 0 && (
               <div className="canvas-hint">
                 <div className="canvas-hint__icon">
-                  <svg viewBox="0 0 48 48" fill="none" stroke="#D1D5DB" strokeWidth="1.5">
-                    <rect x="8" y="8" width="14" height="12" rx="2" />
-                    <rect x="26" y="8" width="14" height="12" rx="2" />
-                    <rect x="17" y="28" width="14" height="12" rx="2" />
-                    <path d="M15 20v4M33 20v4M15 24h18M24 24v4" strokeLinecap="round" />
+                  <svg viewBox="0 0 72 72" fill="none" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="10" y="10" width="20" height="16" rx="3" />
+                    <rect x="42" y="10" width="20" height="16" rx="3" />
+                    <rect x="26" y="44" width="20" height="16" rx="3" />
+                    <path d="M20 26v8M52 26v8M20 34h32M36 34v10" />
+                    <circle cx="20" cy="34" r="2" fill="#9CA3AF" stroke="none" />
+                    <circle cx="52" cy="34" r="2" fill="#9CA3AF" stroke="none" />
+                    <circle cx="36" cy="34" r="2" fill="#9CA3AF" stroke="none" />
                   </svg>
                 </div>
-                <div className="canvas-hint__title">No activities on the canvas</div>
-                <div className="canvas-hint__sub">Drag activities from the left panel to build your workflow</div>
+                <div className="canvas-hint__title">Canvas is empty</div>
+                <div className="canvas-hint__sub">Drag a node from the left panel to start building your workflow</div>
+                <div className="canvas-hint__arrow">←</div>
               </div>
             )}
           </ReactFlow>
@@ -906,6 +1043,12 @@ export default function App() {
       {/* ── Dashboard Modal ──────────────────────────────────── */}
       {dashboardOpen && <DashboardModal onClose={() => setDashboardOpen(false)} />}
 
+      {/* ── Tier-3 Modals ────────────────────────────────────── */}
+      {auditOpen    && <AuditModal        onClose={() => setAuditOpen(false)} />}
+      {robotMgrOpen && <RobotManagerModal onClose={() => setRobotMgrOpen(false)} />}
+      {settingsOpen && <SettingsModal     onClose={() => setSettingsOpen(false)} />}
+      {aboutOpen    && <AboutModal        onClose={() => setAboutOpen(false)} />}
+
       {/* ── Publish Toast ─────────────────────────────────────── */}
       {pubToast && (
         <div className={`pub-toast pub-toast--${pubToast.ok ? 'ok' : 'err'}`}>
@@ -930,7 +1073,9 @@ export default function App() {
           )}
         </div>
         <div className="status-bar__right">
-          <span>Cyclone Studio v1.0</span>
+          <button className="status-bar__about-btn" onClick={() => setAboutOpen(true)}>
+            Stechoq Cyclone Studio v1.0
+          </button>
         </div>
       </footer>
     </div>

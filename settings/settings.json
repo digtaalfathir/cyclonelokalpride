@@ -1,0 +1,22 @@
+{
+  "notifications": {
+    "desktopOnSuccess": true,
+    "desktopOnFailure": true,
+    "emailEnabled": false,
+    "emailOnSuccess": false,
+    "emailOnFailure": true,
+    "smtp": {
+      "host": "",
+      "port": 587,
+      "secure": false,
+      "user": "",
+      "pass": "",
+      "to": ""
+    }
+  },
+  "robotApi": {
+    "enabled": false,
+    "port": 3456,
+    "token": "e6df768e8fb907088778306180091747fdc2bc6e551cc21e3b42d4fd"
+  }
+}

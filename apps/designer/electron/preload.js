@@ -4,7 +4,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Window controls
   minimize: () => ipcRenderer.send('window:minimize'),
   maximize: () => ipcRenderer.send('window:maximize'),
-  close:    () => ipcRenderer.send('window:close'),
+  close:    () => ipcRenderer.send('window:close'),   // hides to tray
+  quit:     () => ipcRenderer.send('app:quit'),        // real quit
 
   // Local draft save / open
   saveFlow:   (name, data) => ipcRenderer.invoke('flow:save',   { name, data }),
@@ -50,6 +51,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Step Debugger
   debugResume: () => ipcRenderer.invoke('debug:resume'),
   debugStep:   () => ipcRenderer.invoke('debug:step'),
+
+  // Settings (F12)
+  getSettings:  ()        => ipcRenderer.invoke('settings:get'),
+  saveSettings: (updates) => ipcRenderer.invoke('settings:save', updates),
+
+  // Audit Log (F15)
+  listAudit: (options) => ipcRenderer.invoke('audit:list', options || {}),
+
+  // Robot API info (F11)
+  getRobotApiInfo: () => ipcRenderer.invoke('robot:api-info'),
+
+  // Export Report (F13)
+  exportExcel: (runs, filename) => ipcRenderer.invoke('report:export-excel', { runs, filename }),
+  exportPdf:   (htmlContent, filename) => ipcRenderer.invoke('report:export-pdf', { htmlContent, filename }),
 
   // Push events from main → renderer
   onSchedulerJobComplete: (callback) => {

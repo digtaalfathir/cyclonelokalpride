@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { IconExport } from './Icons';
+import { SkeletonTable } from './Skeleton';
 
 const api = window.electronAPI || null;
 
@@ -67,31 +69,72 @@ function SourceBadge({ source }) {
   );
 }
 
+function ExportButton({ runs }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const exportExcel = async () => {
+    setMenuOpen(false);
+    await api?.exportExcel(runs, 'cyclone-history.xlsx');
+  };
+
+  const exportPdf = async () => {
+    setMenuOpen(false);
+    const rows = runs.map(r =>
+      `<tr><td>${r.runId?.slice(0,16)}…</td><td>${r.workflowId||''}</td><td>${r.status||''}</td><td>${r.startTime ? new Date(r.startTime).toLocaleString() : ''}</td><td>${r.duration != null ? (r.duration/1000).toFixed(2)+'s' : ''}</td><td>${r.error||''}</td></tr>`
+    ).join('');
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Cyclone Run History</title>
+    <style>body{font-family:sans-serif;padding:24px}h1{font-size:18px}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #ddd;padding:6px 8px;text-align:left}th{background:#1e293b;color:#fff}</style>
+    </head><body><h1>Cyclone Run History — ${new Date().toLocaleDateString()}</h1>
+    <table><thead><tr><th>Run ID</th><th>Workflow</th><th>Status</th><th>Start Time</th><th>Duration</th><th>Error</th></tr></thead><tbody>${rows}</tbody></table></body></html>`;
+    await api?.exportPdf(html, 'cyclone-history.pdf');
+  };
+
+  if (!api) return null;
+  return (
+    <div className="export-dropdown" style={{ position: 'relative', display: 'inline-block' }}>
+      <button className="hist-btn" onClick={() => setMenuOpen(v => !v)}>
+        <IconExport size={12} /> Export ▾
+      </button>
+      {menuOpen && (
+        <div className="export-menu">
+          <button onClick={exportExcel}>Export Excel (.xlsx)</button>
+          <button onClick={exportPdf}>Export PDF (.pdf)</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function RunHistoryTab({ runs, onViewReport }) {
   if (!runs.length) {
     return <div className="hist-empty">No run history yet. Run the workflow to create entries.</div>;
   }
   return (
-    <table className="hist-table">
-      <thead>
-        <tr><th>Run ID</th><th>Version</th><th>Source</th><th>Start</th><th>Duration</th><th>Status</th><th></th></tr>
-      </thead>
-      <tbody>
-        {runs.map(r => (
-          <tr key={r.runId}>
-            <td style={{ fontFamily: 'monospace', fontSize: 11 }}>{r.runId.slice(0, 18)}…</td>
-            <td>{r.workflowVersion != null ? `v${r.workflowVersion}` : <span className="hist-muted">draft</span>}</td>
-            <td><SourceBadge source={r.executionSource} /></td>
-            <td>{fmtDate(r.startTime)}</td>
-            <td>{fmtDur(r.duration)}</td>
-            <td><StatusBadge status={r.status} /></td>
-            <td>
-              <button className="hist-btn" onClick={() => onViewReport(r.runId)}>Report</button>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <>
+      <div className="hist-actions-bar">
+        <ExportButton runs={runs} />
+      </div>
+      <table className="hist-table">
+        <thead>
+          <tr><th>Run ID</th><th>Version</th><th>Source</th><th>Start</th><th>Duration</th><th>Status</th><th></th></tr>
+        </thead>
+        <tbody>
+          {runs.map(r => (
+            <tr key={r.runId}>
+              <td style={{ fontFamily: 'monospace', fontSize: 11 }}>{r.runId.slice(0, 18)}…</td>
+              <td>{r.workflowVersion != null ? `v${r.workflowVersion}` : <span className="hist-muted">draft</span>}</td>
+              <td><SourceBadge source={r.executionSource} /></td>
+              <td>{fmtDate(r.startTime)}</td>
+              <td>{fmtDur(r.duration)}</td>
+              <td><StatusBadge status={r.status} /></td>
+              <td>
+                <button className="hist-btn" onClick={() => onViewReport(r.runId)}>Report</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </>
   );
 }
 
@@ -182,7 +225,7 @@ export default function HistoryModal({ flowName, onClose }) {
 
         <div className="hist-body">
           {loading ? (
-            <div className="hist-empty">Loading…</div>
+            <SkeletonTable rows={5} cols={tab === 'versions' ? 3 : 7} />
           ) : (
             <>
               {tab === 'versions' && <VersionsTab versions={versions} />}

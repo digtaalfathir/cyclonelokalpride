@@ -1,10 +1,12 @@
 'use strict';
 
 const { JobExecutor } = require('./JobExecutor');
+const { computeNextRunCron, nextOccurrenceOfTime } = require('./cronParser');
 
 // ── Next-run computation (exported for IPC layer reuse) ──────
 function computeNextRun(scheduleType, config, afterDate) {
   const from = new Date(afterDate || Date.now());
+  const tz   = config.timezone || null;
 
   switch (scheduleType) {
     case 'ONCE': {
@@ -17,20 +19,26 @@ function computeNextRun(scheduleType, config, afterDate) {
     }
     case 'DAILY': {
       const [h, m] = (config.time || '00:00').split(':').map(Number);
-      const next   = new Date(from);
+      if (tz) return nextOccurrenceOfTime(h, m, null, tz, from);
+      const next = new Date(from);
       next.setHours(h, m, 0, 0);
       if (next <= from) next.setDate(next.getDate() + 1);
       return next;
     }
     case 'WEEKLY': {
-      const [h, m]   = (config.time || '00:00').split(':').map(Number);
+      const [h, m]    = (config.time || '00:00').split(':').map(Number);
       const targetDay = config.dayOfWeek != null ? Number(config.dayOfWeek) : 1;
-      const next      = new Date(from);
+      if (tz) return nextOccurrenceOfTime(h, m, targetDay, tz, from);
+      const next = new Date(from);
       next.setHours(h, m, 0, 0);
       let daysAhead = targetDay - next.getDay();
       if (daysAhead < 0 || (daysAhead === 0 && next <= from)) daysAhead += 7;
       if (daysAhead > 0) next.setDate(next.getDate() + daysAhead);
       return next;
+    }
+    case 'CRON': {
+      if (!config.expression) return null;
+      return computeNextRunCron(config.expression, tz, from);
     }
     default: return null;
   }

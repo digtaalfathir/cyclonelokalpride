@@ -19,6 +19,7 @@ const { SchedulerEngine, computeNextRun } = require('../../shared/scheduler/Sche
 const { JobQueue }                        = require('../../shared/jobs/JobQueue');
 const { RobotRegistry }                  = require('../../shared/robot/RobotRegistry');
 const { RobotAgent }                     = require('../robot/RobotAgent');
+const { RobotApiServer }                 = require('./RobotApiServer');
 const { JobManager }                     = require('./JobManager');
 const { Dispatcher }                     = require('./Dispatcher');
 
@@ -30,7 +31,7 @@ function ensureDir(dir) {
 class ControllerService extends EventEmitter {
   // baseDir  — root of the data directories (project root in dev, resourcesPath in prod)
   // callbacks — IPC forwarding functions injected by main.js
-  constructor({ baseDir, onLog, onNodeStart, onNodeComplete, onNodeError,
+  constructor({ baseDir, auditRepo, onLog, onNodeStart, onNodeComplete, onNodeError,
                 onJobComplete, onJobQueued, onSchedulerJobComplete, onDebugPaused }) {
     super();
 
@@ -52,6 +53,9 @@ class ControllerService extends EventEmitter {
     this._jobManager = new JobManager({ jobQueue: this._jobQueue });
     this._dispatcher = new Dispatcher({ robotRegistry: this._registry });
 
+    // ── Audit log (optional, injected from main.js) ───────────
+    this._auditRepo  = auditRepo || null;
+
     // ── IPC callbacks ────────────────────────────────────────
     this._cb = {
       onLog:                  onLog                  || (() => {}),
@@ -66,6 +70,11 @@ class ControllerService extends EventEmitter {
 
     this._robotAgent      = null;
     this._schedulerEngine = null;
+    this._robotApiServer  = null;
+  }
+
+  _audit(action, details = {}) {
+    try { this._auditRepo?.log({ action, actor: 'user', details }); } catch (_) {}
   }
 
   // ── Lifecycle ─────────────────────────────────────────────────
@@ -77,6 +86,7 @@ class ControllerService extends EventEmitter {
   stop() {
     this._schedulerEngine?.stop();
     this._robotAgent?.stop();
+    this._robotApiServer?.stop();
   }
 
   _log(level, message) {
@@ -97,7 +107,10 @@ class ControllerService extends EventEmitter {
         onNodeStart:     id   => this._cb.onNodeStart(id),
         onNodeComplete:  id   => this._cb.onNodeComplete(id),
         onNodeError:     data => this._cb.onNodeError(data),
-        onJobComplete:   data => this._cb.onJobComplete(data),
+        onJobComplete:   data => {
+          this._cb.onJobComplete(data);
+          this.emit(`job-complete:${data.jobId}`, data);
+        },
         onDebugPaused:   data => this._cb.onDebugPaused(data),
       });
       this._robotAgent.start();
@@ -105,6 +118,32 @@ class ControllerService extends EventEmitter {
     } catch (err) {
       this._log('ERROR', `[Controller] RobotAgent failed to start: ${err.message}`);
     }
+  }
+
+  // ── Robot API Server (for remote robots) ─────────────────────
+  startRobotApiServer(port, token) {
+    if (this._robotApiServer) {
+      this._robotApiServer.stop();
+      this._robotApiServer = null;
+    }
+    this._robotApiServer = new RobotApiServer({
+      jobQueue:      this._jobQueue,
+      execRepo:      this._execRepo,
+      registry:      this._registry,
+      token,
+      onLog:         log  => this._cb.onLog(log),
+      onJobComplete: (jobId, result) => {
+        this._cb.onJobComplete({ ...result, jobId });
+        this.emit(`job-complete:${jobId}`, { ...result, jobId });
+      },
+    });
+    this._robotApiServer.start(port);
+    this._log('INFO', `[Controller] RobotApiServer started on port ${port}`);
+  }
+
+  stopRobotApiServer() {
+    this._robotApiServer?.stop();
+    this._robotApiServer = null;
   }
 
   _startSchedulerEngine() {
@@ -126,7 +165,9 @@ class ControllerService extends EventEmitter {
 
   // ── Workflow Registry ─────────────────────────────────────────
   publishWorkflow(workflowId, flowData, description) {
-    return this._workflowRepo.publish(workflowId, flowData, description);
+    const result = this._workflowRepo.publish(workflowId, flowData, description);
+    this._audit('workflow.publish', { workflowId, version: result?.version, description });
+    return result;
   }
 
   listVersions(workflowId) {
@@ -148,11 +189,12 @@ class ControllerService extends EventEmitter {
       flowData,
     });
 
+    this._audit('workflow.run', { workflowId: job.workflowId, jobId: job.id, source: 'MANUAL' });
     this._cb.onJobQueued({ jobId: job.id });
     this._dispatcher.dispatch(job, this._cb.onLog);
 
     return new Promise(resolve => {
-      this._robotAgent.once(`job-complete:${job.id}`, result => resolve({ ...result, jobId: job.id }));
+      this.once(`job-complete:${job.id}`, result => resolve({ ...result, jobId: job.id }));
     });
   }
 
@@ -190,10 +232,12 @@ class ControllerService extends EventEmitter {
 
   createSchedule(data) {
     const nextRun = computeNextRun(data.scheduleType, data.config || {}, new Date());
-    return this._schedRepo.createSchedule({
+    const result  = this._schedRepo.createSchedule({
       ...data,
       nextRunAt: nextRun ? nextRun.toISOString() : null,
     });
+    this._audit('schedule.create', { scheduleId: result?.id, name: data.name, type: data.scheduleType });
+    return result;
   }
 
   updateSchedule(id, updates) {
@@ -201,11 +245,14 @@ class ControllerService extends EventEmitter {
     const type     = updates.scheduleType || existing?.scheduleType;
     const config   = updates.config       || existing?.config || {};
     const nextRun  = computeNextRun(type, config, new Date());
-    return this._schedRepo.updateSchedule(id, { ...updates, nextRunAt: nextRun ? nextRun.toISOString() : null });
+    const result   = this._schedRepo.updateSchedule(id, { ...updates, nextRunAt: nextRun ? nextRun.toISOString() : null });
+    this._audit('schedule.update', { scheduleId: id });
+    return result;
   }
 
   deleteSchedule(id) {
     this._schedRepo.deleteSchedule(id);
+    this._audit('schedule.delete', { scheduleId: id });
   }
 
   toggleSchedule(id, enabled) {
@@ -217,6 +264,7 @@ class ControllerService extends EventEmitter {
       updates.nextRunAt = next ? next.toISOString() : null;
     }
     this._schedRepo.updateSchedule(id, updates);
+    this._audit('schedule.toggle', { scheduleId: id, enabled });
   }
 
   computeNextRun(scheduleType, config) {

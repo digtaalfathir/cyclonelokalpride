@@ -1,17 +1,29 @@
 import React, { useState, useEffect } from 'react';
+import { SkeletonTable } from './Skeleton';
 
 const api = window.electronAPI || null;
 
 const DAY_LABELS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
 function computeScheduleLabel({ scheduleType, config }) {
+  const tz = config.timezone ? ` (${config.timezone})` : '';
   switch (scheduleType) {
     case 'ONCE':   return `Once — ${config.datetime || '?'}`;
     case 'HOURLY': return `Every ${config.interval || 1}h`;
-    case 'DAILY':  return `Daily at ${config.time || '?'}`;
-    case 'WEEKLY': return `${DAY_LABELS[config.dayOfWeek ?? 1]} at ${config.time || '?'}`;
+    case 'DAILY':  return `Daily at ${config.time || '?'}${tz}`;
+    case 'WEEKLY': return `${DAY_LABELS[config.dayOfWeek ?? 1]} at ${config.time || '?'}${tz}`;
+    case 'CRON':   return `Cron: ${config.expression || '?'}${tz}`;
     default: return scheduleType;
   }
+}
+
+// Lazy list of IANA timezones — only needed when user opens timezone dropdown
+let _tzList = null;
+function getTzList() {
+  if (_tzList) return _tzList;
+  try { _tzList = Intl.supportedValuesOf('timeZone'); }
+  catch { _tzList = []; }
+  return _tzList;
 }
 
 function fmtNextRun(iso) {
@@ -43,7 +55,7 @@ function StatusBadge({ status }) {
   );
 }
 
-const defaultConfig = () => ({ time: '07:00', interval: 1, dayOfWeek: 1, datetime: '' });
+const defaultConfig = () => ({ time: '07:00', interval: 1, dayOfWeek: 1, datetime: '', timezone: '', expression: '0 7 * * *' });
 
 function ScheduleForm({ initial, publishedWorkflows, onSubmit, onCancel }) {
   const [form, setForm]           = useState(() => initial ? {
@@ -129,7 +141,7 @@ function ScheduleForm({ initial, publishedWorkflows, onSubmit, onCancel }) {
       <div className="sched-form__row">
         <label className="sched-form__label">Schedule Type *</label>
         <div className="sched-form__type-group">
-          {['ONCE','DAILY','HOURLY','WEEKLY'].map(t => (
+          {['ONCE','DAILY','HOURLY','WEEKLY','CRON'].map(t => (
             <label
               key={t}
               className={`sched-form__type-btn ${form.scheduleType === t ? 'sched-form__type-btn--active' : ''}`}
@@ -200,6 +212,42 @@ function ScheduleForm({ initial, publishedWorkflows, onSubmit, onCancel }) {
             />
             <span className="hist-muted" style={{ fontSize: 13 }}>hours</span>
           </div>
+        </div>
+      )}
+
+      {form.scheduleType === 'CRON' && (
+        <>
+          <div className="sched-form__row">
+            <label className="sched-form__label">Cron Expression *</label>
+            <input
+              className="sched-form__input"
+              type="text"
+              placeholder="minute hour dom month dow — e.g. 0 7 * * 1-5"
+              value={form.config.expression}
+              onChange={e => setConfig('expression', e.target.value)}
+              required
+            />
+          </div>
+          <div className="sched-cron-hint">
+            Format: <code>minute hour day-of-month month day-of-week</code>
+            &nbsp;— e.g. <code>0 9 * * 1</code> = every Monday 09:00
+          </div>
+        </>
+      )}
+
+      {(form.scheduleType === 'DAILY' || form.scheduleType === 'WEEKLY' || form.scheduleType === 'CRON') && (
+        <div className="sched-form__row">
+          <label className="sched-form__label">Timezone</label>
+          <select
+            className="sched-form__input"
+            value={form.config.timezone || ''}
+            onChange={e => setConfig('timezone', e.target.value)}
+          >
+            <option value="">Local machine time</option>
+            {getTzList().map(tz => (
+              <option key={tz} value={tz}>{tz}</option>
+            ))}
+          </select>
         </div>
       )}
 
@@ -303,7 +351,7 @@ export default function SchedulerModal({ onClose }) {
 
         <div className="hist-body">
           {loading ? (
-            <div className="hist-empty">Loading…</div>
+            <SkeletonTable rows={4} cols={7} />
 
           ) : view === 'list' ? (
             schedules.length === 0 ? (

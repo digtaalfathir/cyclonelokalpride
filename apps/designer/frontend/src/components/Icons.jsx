@@ -783,3 +783,47 @@ export function IconCopyNodes({ size = 16 }) {
     </svg>
   );
 }
+
+// ── Tier-3 icons ──────────────────────────────────────────────
+
+// Scroll with lines — Audit Log
+export function IconAudit({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11.5 2H4.5A1.5 1.5 0 0 0 3 3.5v9A1.5 1.5 0 0 0 4.5 14h7A1.5 1.5 0 0 0 13 12.5v-9A1.5 1.5 0 0 0 11.5 2Z" />
+      <path d="M5.5 5.5h5M5.5 8h5M5.5 10.5h3" />
+    </svg>
+  );
+}
+
+// Networked robots — Remote Robot / Robot Network
+export function IconRobotNetwork({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1" y="8.5" width="4.5" height="5.5" rx="1" />
+      <rect x="10.5" y="8.5" width="4.5" height="5.5" rx="1" />
+      <rect x="5.5" y="1.5" width="5" height="5" rx="1" />
+      <path d="M3.25 8.5V6.5H8M12.75 8.5V6.5H8M8 6.5V6" />
+    </svg>
+  );
+}
+
+// Bell — Notifications
+export function IconBell({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 1.5A4.5 4.5 0 0 0 3.5 6v3.5L2 11.5h12l-1.5-2V6A4.5 4.5 0 0 0 8 1.5Z" />
+      <path d="M6.5 11.5a1.5 1.5 0 0 0 3 0" />
+    </svg>
+  );
+}
+
+// Arrow down box — Export
+export function IconExport({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 2v8M5 7l3 3 3-3" />
+      <path d="M2 11v2a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-2" />
+    </svg>
+  );
+}

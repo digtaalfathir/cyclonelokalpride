@@ -1,13 +1,75 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Notification, shell, Tray, Menu, nativeImage } = require('electron');
 const path = require('path');
 const fs   = require('fs');
 const { ControllerService }               = require('../../controller');
 const { startElementPicker, closePicker } = require('../elementPicker');
+const { AuditRepository }                 = require('../../../shared/audit/AuditRepository');
+const { SettingsRepository }              = require('../../../shared/settings/SettingsRepository');
 
 const isDev = process.env.NODE_ENV === 'development';
 
-let mainWindow = null;
-let controller = null;
+let mainWindow   = null;
+let controller   = null;
+let settingsRepo = null;
+let auditRepo    = null;
+let tray         = null;
+let forceQuit    = false;  // true only when user explicitly quits from tray
+let trayNotified = false;  // show "running in background" hint only once
+
+// ── System Tray — keeps scheduler alive when window is closed ─────────
+function createTray() {
+  const iconPath = path.join(__dirname, '..', '..', '..', 'assets', 'icon.png');
+  let icon;
+  try {
+    icon = nativeImage.createFromPath(iconPath);
+    // Tray icon on Windows should be 16×16
+    if (!icon.isEmpty()) icon = icon.resize({ width: 16, height: 16 });
+  } catch (_) {
+    icon = nativeImage.createEmpty();
+  }
+
+  tray = new Tray(icon);
+  tray.setToolTip('Stechoq Cyclone Studio — Scheduler running');
+
+  const buildMenu = () => Menu.buildFromTemplate([
+    {
+      label: 'Show Cyclone Studio',
+      click: () => { mainWindow?.show(); mainWindow?.focus(); },
+    },
+    { type: 'separator' },
+    {
+      label: 'Quit',
+      click: () => { forceQuit = true; app.quit(); },
+    },
+  ]);
+
+  tray.setContextMenu(buildMenu());
+
+  // Left-click restores the window
+  tray.on('click', () => {
+    if (mainWindow?.isVisible()) {
+      mainWindow.focus();
+    } else {
+      mainWindow?.show();
+      mainWindow?.focus();
+    }
+  });
+}
+
+function hideToTray() {
+  mainWindow?.hide();
+  if (!trayNotified) {
+    trayNotified = true;
+    if (Notification.isSupported()) {
+      try {
+        new Notification({
+          title: 'Cyclone running in background',
+          body:  'Scheduler and automations continue. Click the tray icon to restore.',
+        }).show();
+      } catch (_) {}
+    }
+  }
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -15,7 +77,7 @@ function createWindow() {
     height:   900,
     minWidth: 1100,
     minHeight: 700,
-    title: 'Cyclone Studio',
+    title: 'Stechoq Cyclone Studio',
     backgroundColor: '#F5F6FA',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -32,6 +94,15 @@ function createWindow() {
   } else {
     mainWindow.loadFile(path.join(__dirname, '..', 'frontend', 'dist', 'index.html'));
   }
+
+  // Intercept native close (Alt+F4, taskbar close on Windows)
+  // → hide to tray instead of quit, so the scheduler keeps running.
+  mainWindow.on('close', (e) => {
+    if (!forceQuit) {
+      e.preventDefault();
+      hideToTray();
+    }
+  });
 
   mainWindow.on('closed', () => { mainWindow = null; });
 }
@@ -86,22 +157,76 @@ function seedInitialData() {
   fs.writeFileSync(markerFile, new Date().toISOString(), 'utf-8');
 }
 
+// ── Notifications (F12) ───────────────────────────────────────────────
+function sendDesktopNotification(title, body) {
+  if (!Notification.isSupported()) return;
+  try { new Notification({ title, body }).show(); } catch (_) {}
+}
+
+async function sendEmail(smtp, subject, text) {
+  try {
+    // lazy require so app still works if nodemailer is not installed
+    const nodemailer = require('nodemailer');
+    const transporter = nodemailer.createTransport({
+      host: smtp.host, port: smtp.port, secure: !!smtp.secure,
+      auth: { user: smtp.user, pass: smtp.pass },
+    });
+    await transporter.sendMail({ from: smtp.user, to: smtp.to, subject, text });
+  } catch (err) {
+    console.error('[Email] Failed to send:', err.message);
+  }
+}
+
+function handleJobNotification(data, isScheduled) {
+  const settings = settingsRepo?.get()?.notifications;
+  if (!settings) return;
+  const success  = data.success !== false;
+  const label    = isScheduled ? 'Scheduled job' : 'Manual run';
+  const wfId     = data.workflowId || data.jobId || '';
+
+  if (success && settings.desktopOnSuccess)
+    sendDesktopNotification('Cyclone — Run Complete', `${label} "${wfId}" completed successfully.`);
+  if (!success && settings.desktopOnFailure)
+    sendDesktopNotification('Cyclone — Run Failed', `${label} "${wfId}" failed: ${data.error || 'unknown error'}`);
+
+  if (settings.emailEnabled && settings.smtp?.host) {
+    const smtp = settings.smtp;
+    if (success && settings.emailOnSuccess)
+      sendEmail(smtp, `[Cyclone] Run Complete — ${wfId}`, `${label} "${wfId}" completed successfully.\n\nTimestamp: ${new Date().toISOString()}`);
+    if (!success && settings.emailOnFailure)
+      sendEmail(smtp, `[Cyclone] Run Failed — ${wfId}`, `${label} "${wfId}" failed.\n\nError: ${data.error}\nTimestamp: ${new Date().toISOString()}`);
+  }
+}
+
 // ── Start the Controller (owns all repos + robot + scheduler) ─────────
 function startController() {
   const baseDir = getDataDir();
 
+  settingsRepo = new SettingsRepository({ settingsFile: path.join(baseDir, 'settings', 'settings.json') });
+  auditRepo    = new AuditRepository   ({ auditFile:    path.join(baseDir, 'audit',    'audit.jsonl')   });
+  settingsRepo.ensureRobotToken();
+
   controller = new ControllerService({
     baseDir,
+    auditRepo,
     onLog:                  log  => mainWindow?.webContents.send('engine:log',           log),
     onNodeStart:            id   => mainWindow?.webContents.send('engine:node-start',    id),
     onNodeComplete:         id   => mainWindow?.webContents.send('engine:node-complete', id),
     onNodeError:            data => mainWindow?.webContents.send('engine:node-error',    data),
-    onJobComplete:          data => mainWindow?.webContents.send('robot:job-complete',   data),
+    onJobComplete:          data => { mainWindow?.webContents.send('robot:job-complete', data); handleJobNotification(data, false); },
     onJobQueued:            data => mainWindow?.webContents.send('robot:job-queued',     data),
-    onSchedulerJobComplete: data => mainWindow?.webContents.send('scheduler:job-complete', data),
+    onSchedulerJobComplete: data => { mainWindow?.webContents.send('scheduler:job-complete', data); handleJobNotification(data, true); },
     onDebugPaused:          data => mainWindow?.webContents.send('debug:paused',         data),
   });
   controller.start();
+
+  // Start Robot API server if enabled in settings
+  const robotApi = settingsRepo.get().robotApi;
+  if (robotApi.enabled && robotApi.token) {
+    try { controller.startRobotApiServer(robotApi.port, robotApi.token); } catch (err) {
+      console.error('[main] Failed to start RobotApiServer:', err.message);
+    }
+  }
 }
 
 // ── Window controls ───────────────────────────────────────────────────
@@ -109,7 +234,10 @@ ipcMain.on('window:minimize', () => mainWindow?.minimize());
 ipcMain.on('window:maximize', () => {
   mainWindow?.isMaximized() ? mainWindow.unmaximize() : mainWindow?.maximize();
 });
-ipcMain.on('window:close', () => mainWindow?.close());
+// Close button → hide to tray (not quit), so scheduler keeps running in background
+ipcMain.on('window:close', () => hideToTray());
+// Explicit quit from tray or Ctrl+Q
+ipcMain.on('app:quit', () => { forceQuit = true; app.quit(); });
 
 // ── Local draft save / open (bypasses Controller — no versioning) ─────
 ipcMain.handle('flow:save', async (_e, { name, data }) => {
@@ -332,6 +460,127 @@ ipcMain.handle('debug:step', async () => {
   catch (err) { return { success: false, error: err.message }; }
 });
 
+// ── Settings (F12) ───────────────────────────────────────────────────
+ipcMain.handle('settings:get', async () => {
+  try { return { success: true, settings: settingsRepo.get() }; }
+  catch (err) { return { success: false, error: err.message }; }
+});
+
+ipcMain.handle('settings:save', async (_e, updates) => {
+  try {
+    const prev    = settingsRepo.get();
+    const saved   = settingsRepo.set(updates);
+    const apiPrev = prev.robotApi;
+    const apiNew  = saved.robotApi;
+
+    // Apply Robot API changes immediately without restart
+    if (apiNew.enabled && (!apiPrev.enabled || apiPrev.port !== apiNew.port || apiPrev.token !== apiNew.token)) {
+      controller.startRobotApiServer(apiNew.port, apiNew.token);
+    } else if (!apiNew.enabled && apiPrev.enabled) {
+      controller.stopRobotApiServer();
+    }
+
+    return { success: true, settings: saved };
+  } catch (err) { return { success: false, error: err.message }; }
+});
+
+// ── Audit Log (F15) ──────────────────────────────────────────────────
+ipcMain.handle('audit:list', async (_e, options) => {
+  try { return { success: true, entries: auditRepo.list(options || {}) }; }
+  catch (err) { return { success: false, error: err.message, entries: [] }; }
+});
+
+// ── Robot API info (F11) ─────────────────────────────────────────────
+ipcMain.handle('robot:api-info', async () => {
+  try {
+    const s = settingsRepo.get().robotApi;
+    const { networkInterfaces } = require('os');
+    const nets = networkInterfaces();
+    const ips  = [];
+    for (const ifaces of Object.values(nets)) {
+      for (const iface of ifaces) {
+        if (iface.family === 'IPv4' && !iface.internal) ips.push(iface.address);
+      }
+    }
+    return { success: true, enabled: s.enabled, port: s.port, token: s.token, ips };
+  } catch (err) { return { success: false, error: err.message }; }
+});
+
+// ── Export Report (F13) ──────────────────────────────────────────────
+ipcMain.handle('report:export-excel', async (_e, { runs, filename }) => {
+  try {
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: 'Export Excel Report',
+      defaultPath: path.join(app.getPath('downloads'), filename || 'cyclone-report.xlsx'),
+      filters: [{ name: 'Excel Files', extensions: ['xlsx'] }],
+    });
+    if (result.canceled) return { success: false, canceled: true };
+
+    const ExcelJS = require('exceljs');
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'Cyclone Studio';
+    wb.created = new Date();
+
+    const ws = wb.addWorksheet('Run History');
+    ws.columns = [
+      { header: 'Run ID',         key: 'id',             width: 30 },
+      { header: 'Workflow',       key: 'workflowId',     width: 25 },
+      { header: 'Status',         key: 'status',         width: 12 },
+      { header: 'Start Time',     key: 'startTime',      width: 22 },
+      { header: 'End Time',       key: 'endTime',        width: 22 },
+      { header: 'Duration (ms)',  key: 'duration',       width: 14 },
+      { header: 'Nodes Executed', key: 'nodesExecuted',  width: 16 },
+      { header: 'Nodes Failed',   key: 'nodesFailed',    width: 14 },
+      { header: 'Error',          key: 'error',          width: 40 },
+    ];
+    // Header row styling
+    ws.getRow(1).font = { bold: true };
+    ws.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
+    ws.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+
+    for (const r of (runs || [])) {
+      ws.addRow({
+        id:            r.id,
+        workflowId:    r.workflowId || '',
+        status:        r.status || '',
+        startTime:     r.startTime ? new Date(r.startTime).toLocaleString() : '',
+        endTime:       r.endTime   ? new Date(r.endTime).toLocaleString()   : '',
+        duration:      r.duration  || '',
+        nodesExecuted: r.nodesExecuted || '',
+        nodesFailed:   r.nodesFailed   || '',
+        error:         r.error         || '',
+      });
+    }
+
+    await wb.xlsx.writeFile(result.filePath);
+    auditRepo.log({ action: 'report.export', details: { format: 'excel', rows: runs?.length || 0 } });
+    return { success: true, path: result.filePath };
+  } catch (err) { return { success: false, error: err.message }; }
+});
+
+ipcMain.handle('report:export-pdf', async (_e, { htmlContent, filename }) => {
+  try {
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: 'Export PDF Report',
+      defaultPath: path.join(app.getPath('downloads'), filename || 'cyclone-report.pdf'),
+      filters: [{ name: 'PDF Files', extensions: ['pdf'] }],
+    });
+    if (result.canceled) return { success: false, canceled: true };
+
+    // Create a hidden window to render the HTML and print to PDF
+    const pdfWin = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: false } });
+    await pdfWin.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);
+    const pdfBuffer = await pdfWin.webContents.printToPDF({
+      marginsType: 1, printBackground: true, landscape: true,
+    });
+    pdfWin.close();
+    fs.writeFileSync(result.filePath, pdfBuffer);
+    auditRepo.log({ action: 'report.export', details: { format: 'pdf' } });
+    shell.openPath(result.filePath);
+    return { success: true, path: result.filePath };
+  } catch (err) { return { success: false, error: err.message }; }
+});
+
 // ── Element Picker ────────────────────────────────────────────────────
 ipcMain.handle('picker:start', async (_e, { url }) => {
   try {
@@ -347,11 +596,15 @@ ipcMain.handle('picker:start', async (_e, { url }) => {
 app.whenReady().then(() => {
   seedInitialData();
   createWindow();
+  createTray();
   startController();
 });
 
+// Don't quit when all windows closed — stay alive in tray so scheduler keeps running.
+// macOS also needs this overridden (no default "keep alive" for non-dock apps).
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
+  if (forceQuit) app.quit();
+  // else: stay alive — tray keeps the process running
 });
 
 app.on('activate', () => {

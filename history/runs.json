@@ -1,5 +1,47 @@
 [
   {
+    "runId": "run_1781622505117_rui0n",
+    "workflowId": "Stage 3 Demo IF",
+    "workflowName": "Stage 3 Demo IF",
+    "workflowVersion": null,
+    "startTime": "2026-06-16T15:08:25.117Z",
+    "endTime": "2026-06-16T15:08:25.782Z",
+    "duration": 661,
+    "status": "SUCCESS",
+    "nodesExecuted": 6,
+    "nodesFailed": 0,
+    "error": null,
+    "executionSource": "MANUAL"
+  },
+  {
+    "runId": "run_1781622445061_mx950",
+    "workflowId": "Stage 6 Demo Excel RPA Style",
+    "workflowName": "Stage 6 Demo Excel RPA Style",
+    "workflowVersion": null,
+    "startTime": "2026-06-16T15:07:25.061Z",
+    "endTime": "2026-06-16T15:07:30.628Z",
+    "duration": 5153,
+    "status": "FAILED",
+    "nodesExecuted": 7,
+    "nodesFailed": 2,
+    "error": "page.waitForSelector: Target page, context or browser has been closed\nCall log:\n\u001b[2m  - waiting for locator('input[name=\\'custname\\']') to be visible\u001b[22m\n",
+    "executionSource": "MANUAL"
+  },
+  {
+    "runId": "run_1781621478782_4j526",
+    "workflowId": "Sample Login Flow",
+    "workflowName": "Sample Login Flow",
+    "workflowVersion": null,
+    "startTime": "2026-06-16T14:51:18.782Z",
+    "endTime": "2026-06-16T14:51:33.038Z",
+    "duration": 13911,
+    "status": "SUCCESS",
+    "nodesExecuted": 7,
+    "nodesFailed": 0,
+    "error": null,
+    "executionSource": "MANUAL"
+  },
+  {
     "runId": "run_1781619650282_xb5l3",
     "workflowId": "Untitled Workflow",
     "workflowName": "Untitled Workflow",

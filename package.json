@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "exceljs": "^4.4.0",
+    "nodemailer": "^6.10.1",
     "playwright": "^1.40.0",
     "sql.js": "^1.14.1"
   },
@@ -46,7 +47,9 @@
       {
         "from": "flows",
         "to": "flows",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "win": {
@@ -60,7 +63,9 @@
       ],
       "icon": "assets/icon.png",
       "publisherName": "LokalPride",
-      "signingHashAlgorithms": ["sha256"],
+      "signingHashAlgorithms": [
+        "sha256"
+      ],
       "signDlls": false
     },
     "nsis": {
