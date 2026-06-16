@@ -4,54 +4,54 @@ const EventEmitter = require('events');
 const { PluginRegistry } = require('./pluginRegistry');
 
 // Stage 1
-const startHandler        = require('./nodes/start');
-const openBrowserHandler  = require('./nodes/openBrowser');
-const navigateUrlHandler  = require('./nodes/navigateUrl');
-const inputTextHandler    = require('./nodes/inputText');
-const clickElementHandler = require('./nodes/clickElement');
-const endHandler          = require('./nodes/end');
+const startHandler        = require('../nodes/start');
+const openBrowserHandler  = require('../nodes/openBrowser');
+const navigateUrlHandler  = require('../nodes/navigateUrl');
+const inputTextHandler    = require('../nodes/inputText');
+const clickElementHandler = require('../nodes/clickElement');
+const endHandler          = require('../nodes/end');
 // Stage 2
-const setVariableHandler  = require('./nodes/setVariable');
-const logMessageHandler   = require('./nodes/logMessage');
-const delayHandler        = require('./nodes/delay');
-const httpRequestHandler  = require('./nodes/httpRequest');
+const setVariableHandler  = require('../nodes/setVariable');
+const logMessageHandler   = require('../nodes/logMessage');
+const delayHandler        = require('../nodes/delay');
+const httpRequestHandler  = require('../nodes/httpRequest');
 // Stage 3
-const ifNodeHandler       = require('./nodes/ifNode');
-const forEachNodeHandler  = require('./nodes/forEachNode');
-const tryCatchNodeHandler = require('./nodes/tryCatchNode');
+const ifNodeHandler       = require('../nodes/ifNode');
+const forEachNodeHandler  = require('../nodes/forEachNode');
+const tryCatchNodeHandler = require('../nodes/tryCatchNode');
 // Stage 4A — Browser Automation
-const waitUrlHandler       = require('./nodes/waitUrl');
-const waitElementHandler   = require('./nodes/waitElement');
-const waitPageLoadHandler  = require('./nodes/waitPageLoad');
-const getCurrentUrlHandler = require('./nodes/getCurrentUrl');
-const getTextHandler       = require('./nodes/getText');
-const elementExistsHandler = require('./nodes/elementExists');
+const waitUrlHandler       = require('../nodes/waitUrl');
+const waitElementHandler   = require('../nodes/waitElement');
+const waitPageLoadHandler  = require('../nodes/waitPageLoad');
+const getCurrentUrlHandler = require('../nodes/getCurrentUrl');
+const getTextHandler       = require('../nodes/getText');
+const elementExistsHandler = require('../nodes/elementExists');
 // Stage 4B — Data Processing
-const jsonParseHandler      = require('./nodes/jsonParse');
-const stringReplaceHandler  = require('./nodes/stringReplace');
-const stringContainsHandler = require('./nodes/stringContains');
-const dateTimeFormatHandler = require('./nodes/dateTimeFormat');
-const arrayLengthHandler    = require('./nodes/arrayLength');
+const jsonParseHandler      = require('../nodes/jsonParse');
+const stringReplaceHandler  = require('../nodes/stringReplace');
+const stringContainsHandler = require('../nodes/stringContains');
+const dateTimeFormatHandler = require('../nodes/dateTimeFormat');
+const arrayLengthHandler    = require('../nodes/arrayLength');
 // Stage 5 — File System
-const readFileHandler        = require('./nodes/readFile');
-const writeFileHandler       = require('./nodes/writeFile');
-const moveFileHandler        = require('./nodes/moveFile');
-const deleteFileHandler      = require('./nodes/deleteFile');
-const fileExistsHandler      = require('./nodes/fileExists');
-const createDirectoryHandler = require('./nodes/createDirectory');
-const directoryExistsHandler = require('./nodes/directoryExists');
+const readFileHandler        = require('../nodes/readFile');
+const writeFileHandler       = require('../nodes/writeFile');
+const moveFileHandler        = require('../nodes/moveFile');
+const deleteFileHandler      = require('../nodes/deleteFile');
+const fileExistsHandler      = require('../nodes/fileExists');
+const createDirectoryHandler = require('../nodes/createDirectory');
+const directoryExistsHandler = require('../nodes/directoryExists');
 // Stage 6 — Excel
-const excelOpenHandler      = require('./nodes/excelOpen');
-const excelReadCellHandler  = require('./nodes/excelReadCell');
-const excelWriteCellHandler = require('./nodes/excelWriteCell');
-const excelReadRangeHandler = require('./nodes/excelReadRange');
-const excelSaveHandler      = require('./nodes/excelSave');
-const excelCloseHandler     = require('./nodes/excelClose');
+const excelOpenHandler      = require('../nodes/excelOpen');
+const excelReadCellHandler  = require('../nodes/excelReadCell');
+const excelWriteCellHandler = require('../nodes/excelWriteCell');
+const excelReadRangeHandler = require('../nodes/excelReadRange');
+const excelSaveHandler      = require('../nodes/excelSave');
+const excelCloseHandler     = require('../nodes/excelClose');
 // Stage 7 — Database
-const dbConnectHandler    = require('./nodes/dbConnect');
-const dbQueryHandler      = require('./nodes/dbQuery');
-const dbExecuteHandler    = require('./nodes/dbExecute');
-const dbDisconnectHandler = require('./nodes/dbDisconnect');
+const dbConnectHandler    = require('../nodes/dbConnect');
+const dbQueryHandler      = require('../nodes/dbQuery');
+const dbExecuteHandler    = require('../nodes/dbExecute');
+const dbDisconnectHandler = require('../nodes/dbDisconnect');
 
 class WorkflowEngine extends EventEmitter {
   constructor() {

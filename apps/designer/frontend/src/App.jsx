@@ -14,6 +14,9 @@ import WorkflowNode from './components/WorkflowNode';
 import NodePalette from './components/NodePalette';
 import PropertyPanel from './components/PropertyPanel';
 import ExecutionConsole from './components/ExecutionConsole';
+import HistoryModal from './components/HistoryModal';
+import SchedulerModal from './components/SchedulerModal';
+import DashboardModal from './components/DashboardModal';
 import { getNodeDefinition } from './nodeDefinitions';
 import {
   LogoMark,
@@ -21,6 +24,7 @@ import {
   IconPlay, IconStopSquare, IconTerminal, IconTrash,
   IconProperties, IconMinimize, IconMaximize, IconClose,
   IconPanelBottom, IconChevronUp, IconChevronDown,
+  IconPublish, IconHistory, IconScheduler, IconDashboard,
 } from './components/Icons';
 
 const api = window.electronAPI || null;
@@ -52,6 +56,16 @@ export default function App() {
   const [execSummary, setExecSummary] = useState(null);
   const [bottomHeight, setBottomHeight] = useState(220);
   const [isResizing, setIsResizing] = useState(false);
+  // ── Stage 8 — Production Lifecycle ────────────────────────
+  const [publishedVersion, setPublishedVersion] = useState(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [pubDialogOpen, setPubDialogOpen] = useState(false);
+  const [pubDescription, setPubDescription] = useState('');
+  const [pubToast, setPubToast] = useState(null);
+  // ── Stage 9 — Scheduler ──────────────────────────────────
+  const [schedulerOpen, setSchedulerOpen] = useState(false);
+  // ── Stage 11 — Controller Dashboard ──────────────────────
+  const [dashboardOpen, setDashboardOpen] = useState(false);
   // Refs hold drag-start values so the mousemove closure is stale-closure-free
   const resizeDragRef = useRef({ startY: 0, startH: 220 });
 
@@ -81,7 +95,10 @@ export default function App() {
   // Engine event listeners
   useEffect(() => {
     if (!api) return;
-    const unsubLog = api.onEngineLog(log => setLogs(p => [...p, log]));
+    const unsubLog = api.onEngineLog(log => {
+      setLogs(p => [...p, log]);
+      setEngineStatus(s => s === 'pending' ? 'running' : s);
+    });
     const unsubStart = api.onNodeStart(id =>
       setNodes(nds => nds.map(n => n.id === id ? { ...n, data: { ...n.data, status: 'running' } } : n))
     );
@@ -93,6 +110,18 @@ export default function App() {
     );
     return () => { unsubLog(); unsubStart(); unsubComplete(); unsubError(); };
   }, [setNodes]);
+
+  // Scheduled job completion toast
+  useEffect(() => {
+    if (!api?.onSchedulerJobComplete) return;
+    return api.onSchedulerJobComplete(data => {
+      setPubToast({
+        ok:      data.success,
+        message: `Scheduled: ${data.workflowId} ${data.success ? 'completed' : 'failed'}`,
+      });
+      setTimeout(() => setPubToast(null), 4000);
+    });
+  }, []);
 
   const onConnect = useCallback(
     params => setEdges(eds => addEdge({ ...params, ...defaultEdgeOptions }, eds)),
@@ -148,8 +177,8 @@ export default function App() {
   const getFlowData = useCallback(() => {
     if (!reactFlowInstance) return null;
     const flow = reactFlowInstance.toObject();
-    return { name: flowName, version: '1.0', nodes: flow.nodes, edges: flow.edges, viewport: flow.viewport };
-  }, [reactFlowInstance, flowName]);
+    return { name: flowName, version: publishedVersion, nodes: flow.nodes, edges: flow.edges, viewport: flow.viewport };
+  }, [reactFlowInstance, flowName, publishedVersion]);
 
   const handleSave = useCallback(async () => {
     const data = getFlowData();
@@ -180,6 +209,7 @@ export default function App() {
         setFlowName(r.name);
         setNodes(r.data.nodes || []);
         setEdges(r.data.edges || []);
+        setPublishedVersion(null);
         if (r.data.viewport && reactFlowInstance) reactFlowInstance.setViewport(r.data.viewport);
         addLog('INFO', `Opened: ${r.name}`);
       }
@@ -210,11 +240,12 @@ export default function App() {
     setExecSummary(null);
     setBottomOpen(true);
     setBottomTab('output');
-    setEngineStatus('running');
+    setEngineStatus('pending');
     if (api) {
       const r = await api.executeFlow(data);
       setEngineStatus(r.success ? 'success' : 'error');
       if (r.metrics) setExecSummary({ ...r.metrics, success: r.success });
+      if (!r.success && r.error) addLog('ERROR', `Execution failed: ${r.error}`);
     } else {
       addLog('WARN', 'Running in browser mode — automation engine not available.');
       addLog('INFO', 'Launch in Electron to run workflows.');
@@ -226,6 +257,23 @@ export default function App() {
     if (api) await api.stopFlow();
     setEngineStatus('idle');
   }, []);
+
+  const handlePublish = useCallback(async () => {
+    const data = getFlowData();
+    if (!data || !api) return;
+    const r = await api.publishFlow(flowName, data, pubDescription);
+    if (r.success) {
+      setPublishedVersion(r.version);
+      setPubToast({ ok: true, message: `Published "${flowName}" as v${r.version}` });
+      setTimeout(() => setPubToast(null), 3500);
+      addLog('SUCCESS', `Published as v${r.version} → ${flowName}_v${r.version}.release.json`);
+    } else {
+      setPubToast({ ok: false, message: r.error || 'Publish failed' });
+      setTimeout(() => setPubToast(null), 3500);
+    }
+    setPubDialogOpen(false);
+    setPubDescription('');
+  }, [getFlowData, flowName, pubDescription]);
 
   const minimapNodeColor = useCallback(node => {
     const def = getNodeDefinition(node.data?.nodeType);
@@ -240,10 +288,11 @@ export default function App() {
   const errorCount = logs.filter(l => l.level === 'ERROR').length;
 
   const statusLabel = {
-    idle: 'Ready',
+    idle:    'Ready',
+    pending: 'Queued...',
     running: 'Executing...',
     success: 'Completed',
-    error: 'Error',
+    error:   'Error',
   }[engineStatus];
 
   return (
@@ -300,13 +349,13 @@ export default function App() {
           <button
             className="toolbar__btn toolbar__btn--primary"
             onClick={handleExecute}
-            disabled={engineStatus === 'running'}
+            disabled={engineStatus === 'running' || engineStatus === 'pending'}
             id="btn-execute"
             title="Run workflow (F5)"
           >
             <IconPlay size={13} /> Run
           </button>
-          {engineStatus === 'running' && (
+          {(engineStatus === 'running' || engineStatus === 'pending') && (
             <button
               className="toolbar__btn toolbar__btn--danger"
               onClick={handleStop}
@@ -317,6 +366,43 @@ export default function App() {
             </button>
           )}
         </div>
+
+        <div className="toolbar__sep" />
+
+        {api && (
+          <div className="toolbar__group">
+            <button
+              className="toolbar__btn toolbar__btn--publish"
+              onClick={() => setPubDialogOpen(true)}
+              disabled={engineStatus === 'running' || engineStatus === 'pending'}
+              title="Publish this workflow as a versioned release"
+            >
+              <IconPublish size={13} />
+              {publishedVersion ? `Publish (v${publishedVersion})` : 'Publish'}
+            </button>
+            <button
+              className="toolbar__btn"
+              onClick={() => setHistoryOpen(true)}
+              title="View versions and run history"
+            >
+              <IconHistory size={13} /> History
+            </button>
+            <button
+              className="toolbar__btn"
+              onClick={() => setSchedulerOpen(true)}
+              title="Manage task schedules"
+            >
+              <IconScheduler size={13} /> Scheduler
+            </button>
+            <button
+              className="toolbar__btn"
+              onClick={() => setDashboardOpen(true)}
+              title="Controller Dashboard — system overview"
+            >
+              <IconDashboard size={13} /> Dashboard
+            </button>
+          </div>
+        )}
 
         <div className="toolbar__sep" />
 
@@ -484,6 +570,56 @@ export default function App() {
           </div>
         )}
       </div>
+
+      {/* ── Publish Dialog ───────────────────────────────────── */}
+      {pubDialogOpen && (
+        <div className="hist-overlay" onClick={() => setPubDialogOpen(false)}>
+          <div className="pub-dialog" onClick={e => e.stopPropagation()}>
+            <div className="pub-dialog__title">Publish Workflow</div>
+            <div className="pub-dialog__sub">Publishing <strong>{flowName}</strong> as a new versioned release.</div>
+            <label className="pub-dialog__label">Description <span className="hist-muted">(optional)</span></label>
+            <input
+              className="pub-dialog__input"
+              type="text"
+              placeholder="e.g. Initial release, Bug fix, Added retry logic…"
+              value={pubDescription}
+              onChange={e => setPubDescription(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handlePublish()}
+              autoFocus
+            />
+            <div className="pub-dialog__actions">
+              <button className="pub-dialog__btn" onClick={() => { setPubDialogOpen(false); setPubDescription(''); }}>
+                Cancel
+              </button>
+              <button className="pub-dialog__btn pub-dialog__btn--primary" onClick={handlePublish}>
+                <IconPublish size={13} /> Publish
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── History Modal ─────────────────────────────────────── */}
+      {historyOpen && (
+        <HistoryModal flowName={flowName} onClose={() => setHistoryOpen(false)} />
+      )}
+
+      {/* ── Scheduler Modal ───────────────────────────────────── */}
+      {schedulerOpen && (
+        <SchedulerModal onClose={() => setSchedulerOpen(false)} />
+      )}
+
+      {/* ── Dashboard Modal ────────────────────────────────────── */}
+      {dashboardOpen && (
+        <DashboardModal onClose={() => setDashboardOpen(false)} />
+      )}
+
+      {/* ── Publish Toast ─────────────────────────────────────── */}
+      {pubToast && (
+        <div className={`pub-toast pub-toast--${pubToast.ok ? 'ok' : 'err'}`}>
+          {pubToast.message}
+        </div>
+      )}
 
       {/* ── Status Bar ───────────────────────────────────────── */}
       <footer className={`status-bar status-bar--${engineStatus}`}>

@@ -624,6 +624,68 @@ export function IconLog({ size = 16 }) {
   );
 }
 
+// ── Stage 11 — Controller ────────────────────────────────────
+
+// Grid of connected nodes — Controller Dashboard
+export function IconDashboard({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1" />
+      <rect x="9"   y="1.5" width="5.5" height="5.5" rx="1" />
+      <rect x="1.5" y="9"   width="5.5" height="5.5" rx="1" />
+      <rect x="9"   y="9"   width="5.5" height="5.5" rx="1" />
+    </svg>
+  );
+}
+
+// Robot / agent head — Robot node
+export function IconRobot({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="5" width="10" height="8" rx="1.5" />
+      <path d="M6 9h.5M9.5 9h.5" strokeWidth="2" />
+      <path d="M6 11.5h4" />
+      <path d="M8 5V3M6 3h4" />
+    </svg>
+  );
+}
+
+// ── Stage 9 — Scheduler ───────────────────────────────────────
+
+// Calendar with clock indicator — Task Scheduler
+export function IconScheduler({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1.5" y="3" width="13" height="11" rx="1.5" />
+      <path d="M1.5 6.5h13M5 1.5v3M11 1.5v3" />
+      <circle cx="10.5" cy="11" r="2.5" />
+      <path d="M10.5 9.5v1.5l1 1" />
+    </svg>
+  );
+}
+
+// ── Stage 8 — Production Lifecycle ────────────────────────────
+
+// Upload arrow over a bar — Publish
+export function IconPublish({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 10V3M5 6l3-3 3 3" />
+      <path d="M2 12v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-1" />
+    </svg>
+  );
+}
+
+// Clock face — Run History
+export function IconHistory({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="8" cy="8" r="6" />
+      <path d="M8 5v3.5l2.5 1.5" />
+    </svg>
+  );
+}
+
 // ── Stage 7 — Database ────────────────────────────────────────
 
 export function IconDbConnect({ size = 16 }) {

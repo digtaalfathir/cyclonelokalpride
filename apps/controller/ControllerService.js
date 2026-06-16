@@ -1,0 +1,261 @@
+'use strict';
+
+// ControllerService — single orchestration hub for the entire system.
+//
+// Owns:  WorkflowRepository, ExecutionRepository, ScheduleRepository,
+//        JobQueue, RobotRegistry, RobotAgent, SchedulerEngine
+//
+// Exposes a clean API so main.js IPC handlers become one-liners.
+// All subsystems are started/stopped through controller.start() / controller.stop().
+
+const path           = require('path');
+const fs             = require('fs');
+const { EventEmitter } = require('events');
+
+const { WorkflowRepository }             = require('../../shared/workflow/WorkflowRepository');
+const { ExecutionRepository }            = require('../../shared/history/ExecutionRepository');
+const { ScheduleRepository }             = require('../../shared/scheduler/ScheduleRepository');
+const { SchedulerEngine, computeNextRun } = require('../../shared/scheduler/SchedulerEngine');
+const { JobQueue }                        = require('../../shared/jobs/JobQueue');
+const { RobotRegistry }                  = require('../../shared/robot/RobotRegistry');
+const { RobotAgent }                     = require('../robot/RobotAgent');
+const { JobManager }                     = require('./JobManager');
+const { Dispatcher }                     = require('./Dispatcher');
+
+function ensureDir(dir) {
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+class ControllerService extends EventEmitter {
+  // baseDir  — root of the data directories (project root in dev, resourcesPath in prod)
+  // callbacks — IPC forwarding functions injected by main.js
+  constructor({ baseDir, onLog, onNodeStart, onNodeComplete, onNodeError,
+                onJobComplete, onJobQueued, onSchedulerJobComplete }) {
+    super();
+
+    // ── Data directories ─────────────────────────────────────
+    const releases  = ensureDir(path.join(baseDir, 'releases'));
+    const history   = ensureDir(path.join(baseDir, 'history'));
+    const schedules = ensureDir(path.join(baseDir, 'schedules'));
+    const jobs      = ensureDir(path.join(baseDir, 'jobs'));
+    const robots    = ensureDir(path.join(baseDir, 'robots'));
+
+    // ── Repositories (singleton instances) ───────────────────
+    this._workflowRepo = new WorkflowRepository({ releasesDir: releases });
+    this._execRepo     = new ExecutionRepository({ historyDir: history });
+    this._schedRepo    = new ScheduleRepository ({ schedulesFile: path.join(schedules, 'schedules.json') });
+    this._jobQueue     = new JobQueue           ({ jobsFile:      path.join(jobs,      'jobs.json')      });
+    this._registry     = new RobotRegistry      ({ registryFile:  path.join(robots,    'robots.json')    });
+
+    // ── Orchestration layers ─────────────────────────────────
+    this._jobManager = new JobManager({ jobQueue: this._jobQueue });
+    this._dispatcher = new Dispatcher({ robotRegistry: this._registry });
+
+    // ── IPC callbacks ────────────────────────────────────────
+    this._cb = {
+      onLog:                  onLog                  || (() => {}),
+      onNodeStart:            onNodeStart            || (() => {}),
+      onNodeComplete:         onNodeComplete         || (() => {}),
+      onNodeError:            onNodeError            || (() => {}),
+      onJobComplete:          onJobComplete          || (() => {}),
+      onJobQueued:            onJobQueued            || (() => {}),
+      onSchedulerJobComplete: onSchedulerJobComplete || (() => {}),
+    };
+
+    this._robotAgent      = null;
+    this._schedulerEngine = null;
+  }
+
+  // ── Lifecycle ─────────────────────────────────────────────────
+  start() {
+    this._startRobotAgent();
+    this._startSchedulerEngine();
+  }
+
+  stop() {
+    this._schedulerEngine?.stop();
+    this._robotAgent?.stop();
+  }
+
+  _log(level, message) {
+    const ts = new Date().toISOString().substring(11, 19);
+    this._cb.onLog({ level, message, timestamp: ts });
+    if (level === 'ERROR') console.error(message);
+  }
+
+  _startRobotAgent() {
+    try {
+      this._robotAgent = new RobotAgent({
+        robotId:         'robot_local',
+        jobQueue:        this._jobQueue,
+        workflowRepo:    this._workflowRepo,
+        execRepo:        this._execRepo,
+        registry:        this._registry,
+        onLog:           log  => this._cb.onLog(log),
+        onNodeStart:     id   => this._cb.onNodeStart(id),
+        onNodeComplete:  id   => this._cb.onNodeComplete(id),
+        onNodeError:     data => this._cb.onNodeError(data),
+        onJobComplete:   data => this._cb.onJobComplete(data),
+      });
+      this._robotAgent.start();
+      this._log('INFO', '[Controller] RobotAgent started — robot_local ONLINE');
+    } catch (err) {
+      this._log('ERROR', `[Controller] RobotAgent failed to start: ${err.message}`);
+    }
+  }
+
+  _startSchedulerEngine() {
+    try {
+      this._schedulerEngine = new SchedulerEngine({
+        schedRepo:     this._schedRepo,
+        workflowRepo:  this._workflowRepo,
+        execRepo:      this._execRepo,
+        jobQueue:      this._jobQueue,
+        onLog:         log  => this._cb.onLog(log),
+        onJobComplete: data => this._cb.onSchedulerJobComplete(data),
+      });
+      this._schedulerEngine.start();
+      this._log('INFO', '[Controller] SchedulerEngine started');
+    } catch (err) {
+      this._log('ERROR', `[Controller] SchedulerEngine failed to start: ${err.message}`);
+    }
+  }
+
+  // ── Workflow Registry ─────────────────────────────────────────
+  publishWorkflow(workflowId, flowData, description) {
+    return this._workflowRepo.publish(workflowId, flowData, description);
+  }
+
+  listVersions(workflowId) {
+    return this._workflowRepo.listVersions(workflowId);
+  }
+
+  listPublished() {
+    return this._workflowRepo.listPublished();
+  }
+
+  // ── Job Management ────────────────────────────────────────────
+  // Designer entry point: create MANUAL job → Dispatcher validates → Robot pulls.
+  // Returns a Promise that resolves when RobotAgent emits job-complete.
+  async requestRun(flowData) {
+    const job = this._jobManager.createJob({
+      workflowId:      flowData.name || 'untitled',
+      workflowVersion: typeof flowData.version === 'number' ? flowData.version : null,
+      source:          'MANUAL',
+      flowData,
+    });
+
+    this._cb.onJobQueued({ jobId: job.id });
+    this._dispatcher.dispatch(job, this._cb.onLog);
+
+    return new Promise(resolve => {
+      this._robotAgent.once(`job-complete:${job.id}`, result => resolve({ ...result, jobId: job.id }));
+    });
+  }
+
+  async cancelJob(jobId) {
+    const result = this._jobManager.cancelJob(jobId);
+    if (result.cancelled && result.wasRunning) {
+      await this._robotAgent?.stopCurrentJob();
+    }
+    return result;
+  }
+
+  retryJob(jobId) {
+    return this._jobManager.retryJob(jobId);
+  }
+
+  listJobs(options) { return this._jobManager.listJobs(options); }
+  getJob(id)        { return this._jobManager.getJob(id); }
+
+  async stopCurrentJob() {
+    await this._robotAgent?.stopCurrentJob();
+  }
+
+  // ── Robot Management ──────────────────────────────────────────
+  listRobots() {
+    return this._registry.listRobots();
+  }
+
+  // ── Schedule Management ───────────────────────────────────────
+  listSchedules() {
+    return this._schedRepo.listSchedules();
+  }
+
+  createSchedule(data) {
+    const nextRun = computeNextRun(data.scheduleType, data.config || {}, new Date());
+    return this._schedRepo.createSchedule({
+      ...data,
+      nextRunAt: nextRun ? nextRun.toISOString() : null,
+    });
+  }
+
+  updateSchedule(id, updates) {
+    const existing = this._schedRepo.getSchedule(id);
+    const type     = updates.scheduleType || existing?.scheduleType;
+    const config   = updates.config       || existing?.config || {};
+    const nextRun  = computeNextRun(type, config, new Date());
+    return this._schedRepo.updateSchedule(id, { ...updates, nextRunAt: nextRun ? nextRun.toISOString() : null });
+  }
+
+  deleteSchedule(id) {
+    this._schedRepo.deleteSchedule(id);
+  }
+
+  toggleSchedule(id, enabled) {
+    const existing = this._schedRepo.getSchedule(id);
+    if (!existing) throw new Error('Schedule not found');
+    const updates = { status: enabled ? 'ACTIVE' : 'DISABLED' };
+    if (enabled) {
+      const next = computeNextRun(existing.scheduleType, existing.config, new Date());
+      updates.nextRunAt = next ? next.toISOString() : null;
+    }
+    this._schedRepo.updateSchedule(id, updates);
+  }
+
+  computeNextRun(scheduleType, config) {
+    return computeNextRun(scheduleType, config, new Date());
+  }
+
+  // ── History ───────────────────────────────────────────────────
+  listRuns(options) {
+    return this._execRepo.getHistory(options);
+  }
+
+  getReport(runId) {
+    return this._execRepo.generateReport(runId);
+  }
+
+  // ── Dashboard Snapshot ────────────────────────────────────────
+  // Aggregates system state for the monitoring dashboard.
+  getDashboardData() {
+    const now      = new Date();
+    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    const allJobs  = this._jobQueue.listJobs();
+    const today    = allJobs.filter(j => j.createdAt >= dayStart);
+    const count    = (status) => allJobs.filter(j => j.status === status).length;
+
+    return {
+      generatedAt: now.toISOString(),
+      workflows:   this._workflowRepo.listPublished(),
+      robots:      this._registry.listRobots(),
+      schedules:   this._schedRepo.listSchedules(),
+      jobs: {
+        recent:  allJobs.slice(0, 20),
+        summary: {
+          total:     allJobs.length,
+          today:     today.length,
+          pending:   count('PENDING'),
+          running:   count('RUNNING'),
+          success:   count('SUCCESS'),
+          failed:    count('FAILED'),
+          cancelled: count('CANCELLED'),
+        },
+      },
+      history: this._execRepo.getHistory({ limit: 10 }),
+    };
+  }
+}
+
+module.exports = { ControllerService };

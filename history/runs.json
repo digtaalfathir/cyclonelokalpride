@@ -1,0 +1,57 @@
+[
+  {
+    "runId": "run_1781596530532_v0fwk",
+    "workflowId": "Stage 6 Demo Excel RPA Style",
+    "workflowName": "Stage 6 Demo Excel RPA Style",
+    "workflowVersion": 1,
+    "startTime": "2026-06-16T07:55:30.532Z",
+    "endTime": "2026-06-16T07:56:01.466Z",
+    "duration": 30520,
+    "status": "SUCCESS",
+    "nodesExecuted": 34,
+    "nodesFailed": 0,
+    "error": null,
+    "executionSource": "SCHEDULED"
+  },
+  {
+    "runId": "run_1781596176195_t91ps",
+    "workflowId": "loginsimple",
+    "workflowName": "loginsimple",
+    "workflowVersion": null,
+    "startTime": "2026-06-16T07:49:36.195Z",
+    "endTime": "2026-06-16T07:49:41.983Z",
+    "duration": 5786,
+    "status": "SUCCESS",
+    "nodesExecuted": 7,
+    "nodesFailed": 0,
+    "error": null,
+    "executionSource": "MANUAL"
+  },
+  {
+    "runId": "run_1781596113145_4ayc2",
+    "workflowId": "Stage 6 Demo Excel RPA Style",
+    "workflowName": "Stage 6 Demo Excel RPA Style",
+    "workflowVersion": null,
+    "startTime": "2026-06-16T07:48:33.145Z",
+    "endTime": "2026-06-16T07:48:46.205Z",
+    "duration": 12651,
+    "status": "FAILED",
+    "nodesExecuted": 7,
+    "nodesFailed": 2,
+    "error": "page.waitForSelector: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('input[name=\\'custname\\']') to be visible\u001b[22m\n",
+    "executionSource": "MANUAL"
+  },
+  {
+    "runId": "run_1781588397173_63dgt",
+    "workflowId": "Stage 6 Demo Excel RPA Style",
+    "workflowName": "Stage 6 Demo Excel RPA Style",
+    "workflowVersion": null,
+    "startTime": "2026-06-16T05:39:57.172Z",
+    "endTime": "2026-06-16T05:40:21.580Z",
+    "duration": 24187,
+    "status": "SUCCESS",
+    "nodesExecuted": 34,
+    "nodesFailed": 0,
+    "error": null
+  }
+]

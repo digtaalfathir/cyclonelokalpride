@@ -1,0 +1,20 @@
+[
+  {
+    "id": "sched_1781596262585_7d7n7",
+    "name": "Stage 6 Demo Excel RPA Style schedule",
+    "workflowId": "Stage 6 Demo Excel RPA Style",
+    "workflowVersion": 1,
+    "scheduleType": "ONCE",
+    "config": {
+      "time": "07:00",
+      "interval": 1,
+      "dayOfWeek": 1,
+      "datetime": "2026-06-16T14:55"
+    },
+    "status": "DISABLED",
+    "createdAt": "2026-06-16T07:51:02.585Z",
+    "updatedAt": "2026-06-16T07:55:29.945Z",
+    "lastRunAt": "2026-06-16T07:55:29.940Z",
+    "nextRunAt": null
+  }
+]

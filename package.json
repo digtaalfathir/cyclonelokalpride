@@ -2,16 +2,17 @@
   "name": "cyclone-lokalpride",
   "version": "1.0.0",
   "description": "Cyclone LokalPride - Visual RPA Workflow Designer & Automation Engine",
-  "main": "electron/main.js",
+  "main": "apps/designer/electron/main.js",
   "author": "LokalPride",
   "license": "MIT",
   "scripts": {
-    "dev:frontend": "cd frontend && npx vite --port 5173",
+    "dev:frontend": "cd apps/designer/frontend && npx vite --port 5173",
     "dev:electron": "cross-env NODE_ENV=development electron .",
     "dev": "concurrently \"npm run dev:frontend\" \"sleep 3 && npm run dev:electron\"",
-    "build:frontend": "cd frontend && npx vite build",
-    "build": "npm run build:frontend && electron-builder --win",
-    "install:frontend": "cd frontend && npm install"
+    "build:frontend": "cd apps/designer/frontend && npx vite build",
+    "build": "npm run build:frontend && npx electron-builder --win",
+    "build:linux": "npm run build:frontend && npx electron-builder --linux",
+    "install:frontend": "cd apps/designer/frontend && npm install"
   },
   "dependencies": {
     "exceljs": "^4.4.0",
@@ -31,9 +32,12 @@
       "output": "dist"
     },
     "files": [
-      "electron/**/*",
-      "engine/**/*",
-      "frontend/dist/**/*",
+      "apps/designer/electron/**/*",
+      "apps/designer/elementPicker.js",
+      "apps/designer/frontend/dist/**/*",
+      "apps/controller/**/*",
+      "apps/robot/**/*",
+      "shared/**/*",
       "flows/**/*",
       "node_modules/**/*",
       "package.json"
@@ -42,9 +46,32 @@
       {
         "from": "flows",
         "to": "flows",
-        "filter": [
-          "**/*"
-        ]
+        "filter": ["**/*"]
+      },
+      {
+        "from": "releases",
+        "to": "releases",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "history",
+        "to": "history",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "schedules",
+        "to": "schedules",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "jobs",
+        "to": "jobs",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "robots",
+        "to": "robots",
+        "filter": ["**/*"]
       }
     ],
     "win": {
